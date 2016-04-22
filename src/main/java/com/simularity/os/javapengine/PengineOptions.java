@@ -1,4 +1,7 @@
 package com.simularity.os.javapengine;
+
+import java.net.URL;
+
 /**
  * Copyright (c) 2016 Simularity Inc.
  * 
@@ -22,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
-public class PengineOptions implements Cloneable {
+public final class PengineOptions implements Cloneable {
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#clone()
@@ -31,6 +34,24 @@ public class PengineOptions implements Cloneable {
 	public final PengineOptions clone() throws CloneNotSupportedException {
 		// TODO Auto-generated method stub
 		return (PengineOptions)super.clone();
+	}
+
+	/**
+	 * @param string
+	 * @return
+	 */
+	URL getActualURL(String string) {
+		// TODO Auto-generated method stub
+		// "sn=C02G8416DRJM&cn=&locale=&caller=&num=12345";
+		return null;
+	}
+
+	/**
+	 * @return
+	 */
+	String getRequestBodyCreate() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

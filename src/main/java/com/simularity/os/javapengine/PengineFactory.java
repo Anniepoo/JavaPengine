@@ -23,8 +23,6 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine;
 
-import java.net.URL;
-
 /**
  * @author Annie
  *
@@ -34,11 +32,11 @@ import java.net.URL;
  */
 public class PengineFactory {
 	private static PengineFactory defaultPengineFactory = null;
-	
+	private PengineOptions po = null;
 	/**
 	 * 
 	 */
-	package PengineFactory() {
+	PengineFactory() {
 		
 	}
 	
@@ -50,16 +48,43 @@ public class PengineFactory {
 		return defaultPengineFactory;
 	}
 	
-	
-	public Pengine newPengine() {
-		return new Pengine();
+	public static PengineFactory d() {
+		return getDefaultPengineFactory();
 	}
 	
-	public Pengine newPengine
-	
-	public Pengine newPengine(URL server, String content) {
-		PengineOptions opts = new PengineOptions();
-		
-		
+	public void setDefaultOptions(PengineOptions po) {
+		try {
+			this.po = po.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
 	}
+	
+	public PengineOptions getDefaultOptions() {
+		try {
+			return po.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+			return null; // keeps compiler happy.
+		}
+	}
+	
+	public Pengine newPengine() throws CouldNotCreateException {
+		return new Pengine(this.po);
+	}
+	
+	public Pengine newPengine(PengineOptions po) throws CouldNotCreateException {
+		return new Pengine(po);
+	}
+	
+	/* eventually we have this, and subclass Pengine with PengineOnce and PengineMany, which return Query
+	public Query newPengineOnce(String ask) {
+		return newPengineOnce(this.po, ask);
+	}
+	
+	public Query newPengineOnce(PengineOptions po, String ask) {
+				
+	}
+	*/
+	
 }

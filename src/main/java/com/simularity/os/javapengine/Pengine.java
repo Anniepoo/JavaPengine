@@ -1,4 +1,9 @@
 package com.simularity.os.javapengine;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 /*
  * Copyright (c) 2015 Simularity, Inc.
 
@@ -22,8 +27,10 @@ THE SOFTWARE.
  * 
  */
 import java.net.URL;
-import java.net.URLConnection;
-import javax.json;
+
+import com.simularity.os.javapengine.prolog.parser.CompoundTerm;
+import com.simularity.os.javapengine.prolog.parser.PrologParser;
+import com.simularity.os.javapengine.prolog.parser.PrologTerm;
 
 /*
  * A subclass implements the ask option
@@ -32,6 +39,7 @@ import javax.json;
 public final class Pengine {
 	// we copy the passed in object to make it immutable
 	private final PengineOptions po;
+	@SuppressWarnings("unused")
 	private final String pengineID;
 	
 	public Pengine(final PengineOptions poo) throws CouldNotCreateException {
@@ -43,16 +51,79 @@ public final class Pengine {
 		
 		pengineID = create(po);
 	}
-	
+
 	private synchronized String create(PengineOptions po) throws CouldNotCreateException {
 		URL url = po.getActualURL("create");
-		
-		URLConnection urlc = url.openConnection();
-		
-		Object content = urlc.getContent();
-		String encoding = urlc.getContentEncoding();
-		
-		
+		StringBuffer response;
+
+		try {
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			// above should get us an HttpsURLConnection if it's https://...
+
+			//add request header
+			con.setRequestMethod("POST");
+			con.setRequestProperty("User-Agent", "JavaPengine");
+			con.setRequestProperty("Accept", "application/json application/x-prolog text/x-prolog");
+			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+
+			String urlParameters = po.getRequestBodyCreate();
+
+			// Send post request
+			con.setDoOutput(true);
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			try {
+				wr.writeBytes(urlParameters);
+				wr.flush();
+			} catch (IOException e) {
+				throw new CouldNotCreateException(e.getMessage());
+			} finally {
+				try {
+					wr.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new CouldNotCreateException(e.toString());
+				}
+			}
+
+			int responseCode = con.getResponseCode();
+			System.err.println("\nSending 'POST' request to URL : " + url);
+			System.err.println("Post parameters : " + urlParameters);
+			System.err.println("Response Code : " + responseCode);
+
+			// response will look like 
+			// create('6bd9513c-efcb-4fd7-a7ea-ae1ecdd51013',[slave_limit(3)]).
+			BufferedReader in = new BufferedReader(
+					new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			response = new StringBuffer();
+			try {
+				while ((inputLine = in.readLine()) != null) {
+					response.append(inputLine);
+				}
+			} catch (IOException e) {
+				throw new CouldNotCreateException(e.toString());
+			} finally {
+				try {
+					in.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					throw new CouldNotCreateException(e.toString());
+				}
+			}
+
+			System.err.println(response.toString());
+
+			PrologTerm resp = PrologParser.parse(response.toString());
+			
+			if(resp instanceof CompoundTerm)
+				return ((CompoundTerm) resp).arg(1).toString();
+			else
+				throw new CouldNotCreateException("server returned a non-compound term");
+			
+		} catch (IOException | SyntaxErrorException e) {
+			throw new CouldNotCreateException(e.toString());
+		}
 	}
 }
 // <domain>/<path>/pengine/create
