@@ -51,6 +51,9 @@ public final class PengineOptions implements Cloneable {
 	 */
 	String getRequestBodyCreate() {
 		// TODO Auto-generated method stub
+		// this will be a json object with fields for options
+		// sample, as a prolog dict
+		//_{ src_text:"\n            q(X) :- p(X).\n            p(a). p(b). p(c).\n        "}
 		return null;
 	}
 

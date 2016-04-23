@@ -63,8 +63,9 @@ public final class Pengine {
 			//add request header
 			con.setRequestMethod("POST");
 			con.setRequestProperty("User-Agent", "JavaPengine");
-			con.setRequestProperty("Accept", "application/json application/x-prolog text/x-prolog");
+			con.setRequestProperty("Accept", "application/json");
 			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+			con.setRequestProperty("Content-type", "application/json");
 
 			String urlParameters = po.getRequestBodyCreate();
 
@@ -106,7 +107,6 @@ public final class Pengine {
 				try {
 					in.close();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 					throw new CouldNotCreateException(e.toString());
 				}
@@ -138,4 +138,34 @@ Content-Length: 65
 Connection: close
 
 http://www.oracle.com/technetwork/articles/java/json-1973242.html
+
+Asks response looks like
+success('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
+	[q(b)],
+	1.1307000000002065e-5,
+	true)
+	
+	the last item is whether there are more
+	
+then when you get the last one, and it does a destroy (I guess?)
+
+destroy('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
+	success('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
+		[q(c)],
+		2.1917999999999244e-5,
+		false))
+		
+		
+	from pengines.pl http_pengine_create/1
+	
+	%   HTTP POST handler  for  =/pengine/create=.   This  API  accepts  the
+%   pengine  creation  parameters  both  as  =application/json=  and  as
+%   =www-form-encoded=.
+
+Looks like event_to_json we want the lang to be json-s maybe? certainly need to look into it.
+For the moment, just json
+
+
+
+
 */
