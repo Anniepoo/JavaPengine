@@ -1,5 +1,6 @@
 package com.simularity.os.javapengine;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -26,7 +27,8 @@ THE SOFTWARE.
  * 
  */
 public final class PengineOptions implements Cloneable {
-
+	private URL server = null;
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#clone()
 	 */
@@ -55,6 +57,14 @@ public final class PengineOptions implements Cloneable {
 		// sample, as a prolog dict
 		//_{ src_text:"\n            q(X) :- p(X).\n            p(a). p(b). p(c).\n        "}
 		return null;
+	}
+
+	/**
+	 * @param urlstring
+	 * @throws MalformedURLException 
+	 */
+	public void setServer(String urlstring) throws MalformedURLException {
+		server = new URL(urlstring);
 	}
 
 }
