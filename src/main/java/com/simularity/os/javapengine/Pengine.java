@@ -28,13 +28,13 @@ THE SOFTWARE.
  */
 import java.net.URL;
 
-import com.simularity.os.javapengine.prolog.parser.CompoundTerm;
-import com.simularity.os.javapengine.prolog.parser.PrologParser;
-import com.simularity.os.javapengine.prolog.parser.PrologTerm;
-
-/*
- * A subclass implements the ask option
+/**
+ * This object is a reference to a remote pengine slave.
  * 
+ * To make one {@link PengineFactory}
+ * 
+ * @author anniepoo
+ *
  */
 public final class Pengine {
 	// we copy the passed in object to make it immutable
@@ -52,7 +52,7 @@ public final class Pengine {
 		pengineID = create(po);
 	}
 
-	private synchronized String create(PengineOptions po) throws CouldNotCreateException {
+	private String create(PengineOptions po) throws CouldNotCreateException {
 		URL url = po.getActualURL("create");
 		StringBuffer response;
 
@@ -113,15 +113,10 @@ public final class Pengine {
 			}
 
 			System.err.println(response.toString());
-
-			PrologTerm resp = PrologParser.parse(response.toString());
 			
-			if(resp instanceof CompoundTerm)
-				return ((CompoundTerm) resp).arg(1).toString();
-			else
-				throw new CouldNotCreateException("server returned a non-compound term");
+			return response.toString();
 			
-		} catch (IOException | SyntaxErrorException e) {
+		} catch (IOException e) {
 			throw new CouldNotCreateException(e.toString());
 		}
 	}

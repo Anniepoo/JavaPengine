@@ -23,6 +23,13 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine.example;
 
+import java.net.MalformedURLException;
+
+import com.simularity.os.javapengine.CouldNotCreateException;
+import com.simularity.os.javapengine.Pengine;
+import com.simularity.os.javapengine.PengineFactory;
+import com.simularity.os.javapengine.PengineOptions;
+
 /**
  * @author anniepoo
  *
@@ -41,7 +48,18 @@ public final class Basic {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-
+		PengineOptions po = new PengineOptions();
+		try {
+			po.setServer("http://localhost:9900/");
+		
+			Pengine p = PengineFactory.d().newPengine(po);
+		} catch (MalformedURLException e) {
+			System.err.println("Bad URL" + e.getMessage());
+			e.printStackTrace();
+		} catch (CouldNotCreateException e) {
+			System.err.println("cannot make pengine" + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 }

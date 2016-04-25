@@ -21,14 +21,50 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
+/**
+ * Thrown whenever a Pengine cannot be created.
+ * 
+ * JavaPengine is designed to reduce the amount of exception handling the user needs to do.
+ *
+ * The most common reason a Pengine cannot be created is inability to contact the server.
+ * The second most common reason is a bad set of PengineOptions, either bad values or because
+ * clone throws CloneNotSupportedException
+ * 
+ * @author Anne Ogborn
+ *
+ */
 public class CouldNotCreateException extends Exception {
-
-	public CouldNotCreateException(String string) {
-		// TODO Auto-generated constructor stub
+	private String message;
+	
+	/**
+	 * @param message  the message returned by getMessage()
+	 */
+	public CouldNotCreateException(String message) {
+		this.message = message;
 	}
 
 	/**
+	 * Returns a descriptive message 
 	 * 
+	 * @see java.lang.Throwable#getMessage()
+	 */
+	@Override
+	public String getMessage() {
+		return message;
+	}
+
+	/**
+	 * Convert to a string - just returns the message
+	 * 
+	 * @see java.lang.Throwable#toString()
+	 */
+	@Override
+	public String toString() {
+		return message;
+	}
+
+	/**
+	 * Serialization ID
 	 */
 	private static final long serialVersionUID = 2600990953636107225L;
 	

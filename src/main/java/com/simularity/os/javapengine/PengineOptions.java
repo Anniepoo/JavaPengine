@@ -1,9 +1,10 @@
 package com.simularity.os.javapengine;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 
-/**
+/*
  * Copyright (c) 2016 Simularity Inc.
  * 
 
@@ -29,7 +30,7 @@ THE SOFTWARE.
 public final class PengineOptions implements Cloneable {
 	private URL server = null;
 	
-	/* (non-Javadoc)
+	/**
 	 * @see java.lang.Object#clone()
 	 */
 	@Override
@@ -39,17 +40,36 @@ public final class PengineOptions implements Cloneable {
 	}
 
 	/**
-	 * @param string
+	 * Get the actual URL to request from
+	 * 
+	 * TODO change action from string to enum
+	 * 
+	 * @param action the action to request - create, ask, next, etc - as a string
 	 * @return
+	 * @throws CouldNotCreateException 
 	 */
-	URL getActualURL(String string) {
-		// TODO Auto-generated method stub
-		// "sn=C02G8416DRJM&cn=&locale=&caller=&num=12345";
-		return null;
+	URL getActualURL(String action) throws CouldNotCreateException {
+		if(server == null) {
+			throw new CouldNotCreateException("Cannot get actual URL without setting server");
+		}
+		try {		
+			URI uribase = server.toURI();
+			if (uribase.isOpaque()) {
+				throw new CouldNotCreateException("Cannot get actual URL without setting server");
+			}
+			
+			URI relative = new URI("/pengines/" + action);
+			
+			URI fulluri = uribase.resolve(relative);
+
+			return fulluri.toURL();
+		} catch (MalformedURLException e) {
+			throw new CouldNotCreateException("Cannot form actual URL for action " + action + " from uri " + fulluri.toString());
+		}
 	}
 
 	/**
-	 * @return
+	 * @return a string representation of the request body for the create action
 	 */
 	String getRequestBodyCreate() {
 		// TODO Auto-generated method stub
@@ -60,7 +80,7 @@ public final class PengineOptions implements Cloneable {
 	}
 
 	/**
-	 * @param urlstring
+	 * @param urlstring String that represents the server URL - this does not contain the /pengines/create extension
 	 * @throws MalformedURLException 
 	 */
 	public void setServer(String urlstring) throws MalformedURLException {
