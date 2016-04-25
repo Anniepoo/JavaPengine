@@ -3,6 +3,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 /*
  * Copyright (c) 2015 Simularity, Inc.
@@ -27,6 +28,17 @@ THE SOFTWARE.
  * 
  */
 import java.net.URL;
+
+import javax.json.Json;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonReaderFactory;
+import javax.json.JsonString;
+import javax.json.JsonValue;
+import javax.json.stream.JsonParser;
+import javax.json.stream.JsonParserFactory;
 
 /**
  * This object is a reference to a remote pengine slave.
@@ -114,7 +126,19 @@ public final class Pengine {
 
 			System.err.println(response.toString());
 			
-			return response.toString();
+			JsonReaderFactory jrf = Json.createReaderFactory(null);
+			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
+			JsonObject respObject = jr.readObject();
+			
+			JsonString eventjson = (JsonString)respObject.get("event");
+			String evtstr = eventjson.getString();
+			
+			if(!evtstr.equals("create")) {
+				throw new CouldNotCreateException("create request returned an event other than create");
+			}
+			
+			String id = ((JsonString)respObject.get("id")).getString();
+			return id;
 			
 		} catch (IOException e) {
 			throw new CouldNotCreateException(e.toString());

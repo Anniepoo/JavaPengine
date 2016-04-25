@@ -51,7 +51,6 @@ public final class Basic {
 		PengineOptions po = new PengineOptions();
 		try {
 			po.setServer("http://localhost:9900/");
-		
 			Pengine p = PengineFactory.d().newPengine(po);
 		} catch (MalformedURLException e) {
 			System.err.println("Bad URL" + e.getMessage());

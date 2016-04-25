@@ -34,7 +34,13 @@ public class PengineFactory {
 	private static PengineFactory defaultPengineFactory = null;
 	private PengineOptions po = null;
 	/**
+	 * TODO should this be package access? If it's public, user can set up a bunch of 
+	 * factories and give them diff options, then fire off getQueryDet or something on them
+	 * for diff servers.
 	 * 
+	 * Then how is this diff from just putting these factory methods on PengineOptions?
+	 * In which case it should be PengineBuilder.
+	 * (which actually might make sense- 'make me a pengine with these options' isn't unreasonably a verb on PengineOptions)
 	 */
 	PengineFactory() {
 		
