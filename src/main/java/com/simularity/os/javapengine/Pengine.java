@@ -43,7 +43,7 @@ import javax.json.stream.JsonParserFactory;
 /**
  * This object is a reference to a remote pengine slave.
  * 
- * To make one {@link PengineFactory}
+ * To make one use {@link PengineFactory}
  * 
  * @author anniepoo
  *
@@ -54,7 +54,15 @@ public final class Pengine {
 	@SuppressWarnings("unused")
 	private final String pengineID;
 	
-	public Pengine(final PengineOptions poo) throws CouldNotCreateException {
+	/**
+	 * Create a new pengine object from a set of {@link PengineOptions}.
+	 * The {@link PengineOptions} are cloned internally, so the passed 
+	 * PengineOptions can be modified after this call
+	 * 
+	 * @param poo the PengineOptions to pass
+	 * @throws CouldNotCreateException  if for any reason the pengine cannot be created
+	 */
+	Pengine(final PengineOptions poo) throws CouldNotCreateException {
 		try {
 			this.po = (PengineOptions) poo.clone();
 		} catch (CloneNotSupportedException e) {
@@ -64,6 +72,14 @@ public final class Pengine {
 		pengineID = create(po);
 	}
 
+	/**
+	 * does the actual creation, as a famulus of the constructor.
+	 * 
+	 * @param po the cloned PengineOptions
+	 * @return the ID of the created pengine
+	 * 
+	 * @throws CouldNotCreateException if we can't make the pengine
+	 */
 	private String create(PengineOptions po) throws CouldNotCreateException {
 		URL url = po.getActualURL("create");
 		StringBuffer response;
@@ -99,12 +115,10 @@ public final class Pengine {
 			}
 
 			int responseCode = con.getResponseCode();
-			System.err.println("\nSending 'POST' request to URL : " + url);
-			System.err.println("Post parameters : " + urlParameters);
-			System.err.println("Response Code : " + responseCode);
+			if(responseCode < 200 || responseCode > 299) {
+				throw new CouldNotCreateException("bad response code" + Integer.toString(responseCode));
+			}
 
-			// response will look like 
-			// create('6bd9513c-efcb-4fd7-a7ea-ae1ecdd51013',[slave_limit(3)]).
 			BufferedReader in = new BufferedReader(
 					new InputStreamReader(con.getInputStream()));
 			String inputLine;
@@ -123,8 +137,6 @@ public final class Pengine {
 					throw new CouldNotCreateException(e.toString());
 				}
 			}
-
-			System.err.println(response.toString());
 			
 			JsonReaderFactory jrf = Json.createReaderFactory(null);
 			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
@@ -145,6 +157,10 @@ public final class Pengine {
 		}
 	}
 }
+/*
+ * This project has involved a lot of experimenting, as hte protocol is poorly documented. As such,
+ * I'm retaining my notes here
+ */
 // <domain>/<path>/pengine/create
 // application/json
 // see server_url/4, line 1529 of pengines.pl

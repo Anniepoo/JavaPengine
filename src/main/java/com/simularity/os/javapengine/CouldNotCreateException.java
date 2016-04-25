@@ -22,21 +22,26 @@ THE SOFTWARE.
  * 
  */
 /**
- * Thrown whenever a Pengine cannot be created.
+ * This is thrown whenever a Pengine is requested, but cannot be created.
  * 
  * JavaPengine is designed to reduce the amount of exception handling the user needs to do.
  *
  * The most common reason a Pengine cannot be created is inability to contact the server.
  * The second most common reason is a bad set of PengineOptions, either bad values or because
- * clone throws CloneNotSupportedException
+ * clone throws CloneNotSupportedException.
  * 
  * @author Anne Ogborn
  *
+ * TODO implement the java sourceinfo and the serverNotReachable flag
+ * no, even better, make some subclasses of this and throw them
+ * 
  */
 public class CouldNotCreateException extends Exception {
 	private String message;
 	
 	/**
+	 * Usually only the library creates this exception.
+	 * 
 	 * @param message  the message returned by getMessage()
 	 */
 	public CouldNotCreateException(String message) {
@@ -44,7 +49,7 @@ public class CouldNotCreateException extends Exception {
 	}
 
 	/**
-	 * Returns a descriptive message 
+	 * This returns a descriptive message.
 	 * 
 	 * @see java.lang.Throwable#getMessage()
 	 */
@@ -54,7 +59,7 @@ public class CouldNotCreateException extends Exception {
 	}
 
 	/**
-	 * Convert to a string - just returns the message
+	 * Convert to a string - just returns the message passed to constructor.
 	 * 
 	 * @see java.lang.Throwable#toString()
 	 */

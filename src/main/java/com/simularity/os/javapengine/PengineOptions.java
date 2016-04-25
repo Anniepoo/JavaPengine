@@ -102,9 +102,8 @@ public final class PengineOptions implements Cloneable {
 		if(this.chunk > 1) {
 			job.add("chunk", this.chunk);
 		}
-		if(!this.format.equals("taco")) {   // TODO debug was json
-			job.add("format", this.format);
-		}
+		job.add("format", this.format);
+
 		if(this.srctext != null) {
 			job.add("srctext", this.srctext);
 		}
