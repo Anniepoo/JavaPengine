@@ -30,67 +30,6 @@ package com.simularity.os.javapengine;
  * 
  * Usage - 
  */
-public class PengineFactory {
-	private static PengineFactory defaultPengineFactory = null;
-	private PengineOptions po = null;
-	/**
-	 * TODO should this be package access? If it's public, user can set up a bunch of 
-	 * factories and give them diff options, then fire off getQueryDet or something on them
-	 * for diff servers.
-	 * 
-	 * Then how is this diff from just putting these factory methods on PengineOptions?
-	 * In which case it should be PengineBuilder.
-	 * (which actually might make sense- 'make me a pengine with these options' isn't unreasonably a verb on PengineOptions)
-	 */
-	PengineFactory() {
-		
-	}
-	
-	public static PengineFactory getDefaultPengineFactory() {
-		if (defaultPengineFactory == null) {
-			defaultPengineFactory = new PengineFactory();
-		}
-		
-		return defaultPengineFactory;
-	}
-	
-	public static PengineFactory d() {
-		return getDefaultPengineFactory();
-	}
-	
-	public void setDefaultOptions(PengineOptions po) {
-		try {
-			this.po = po.clone();
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public PengineOptions getDefaultOptions() {
-		try {
-			return po.clone();
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-			return null; // keeps compiler happy.
-		}
-	}
-	
-	public Pengine newPengine() throws CouldNotCreateException {
-		return new Pengine(this.po);
-	}
-	
-	public Pengine newPengine(PengineOptions po) throws CouldNotCreateException {
-		return new Pengine(po);
-	}
-	
-	/* eventually we have this, and subclass Pengine with PengineOnce and PengineMany, which return Query
-	public Query newPengineOnce(String ask) {
-		return newPengineOnce(this.po, ask);
-	}
-	
-	public Query newPengineOnce(PengineOptions po, String ask) {
-				
-	}
-	*/
-	
+public interface PengineFactory {
+	public Pengine newPengine() throws CouldNotCreateException;
 }

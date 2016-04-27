@@ -50,21 +50,21 @@ import javax.json.stream.JsonParserFactory;
  */
 public final class Pengine {
 	// we copy the passed in object to make it immutable
-	private final PengineOptions po;
+	private final PengineBuilder po;
 	@SuppressWarnings("unused")
 	private final String pengineID;
 	
 	/**
-	 * Create a new pengine object from a set of {@link PengineOptions}.
-	 * The {@link PengineOptions} are cloned internally, so the passed 
+	 * Create a new pengine object from a set of {@link PengineBuilder}.
+	 * The {@link PengineBuilder} are cloned internally, so the passed 
 	 * PengineOptions can be modified after this call
 	 * 
 	 * @param poo the PengineOptions to pass
 	 * @throws CouldNotCreateException  if for any reason the pengine cannot be created
 	 */
-	Pengine(final PengineOptions poo) throws CouldNotCreateException {
+	Pengine(final PengineBuilder poo) throws CouldNotCreateException {
 		try {
-			this.po = (PengineOptions) poo.clone();
+			this.po = (PengineBuilder) poo.clone();
 		} catch (CloneNotSupportedException e) {
 			throw new CouldNotCreateException("PengineOptions must be clonable");
 		}
@@ -80,7 +80,7 @@ public final class Pengine {
 	 * 
 	 * @throws CouldNotCreateException if we can't make the pengine
 	 */
-	private String create(PengineOptions po) throws CouldNotCreateException {
+	private String create(PengineBuilder po) throws CouldNotCreateException {
 		URL url = po.getActualURL("create");
 		StringBuffer response;
 
@@ -155,6 +155,13 @@ public final class Pengine {
 		} catch (IOException e) {
 			throw new CouldNotCreateException(e.toString());
 		}
+	}
+
+	/**
+	 * 
+	 */
+	public void dumpStateDebug() {
+		System.err.println(this.pengineID);
 	}
 }
 /*

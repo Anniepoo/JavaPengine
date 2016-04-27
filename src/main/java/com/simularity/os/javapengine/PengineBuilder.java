@@ -36,7 +36,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
-public final class PengineOptions implements Cloneable {
+public final class PengineBuilder implements Cloneable, PengineFactory {
 	private URL server = null;
 	private String application = "sandbox";
 	private String ask = null;
@@ -51,9 +51,9 @@ public final class PengineOptions implements Cloneable {
 	 * @see java.lang.Object#clone()
 	 */
 	@Override
-	public final PengineOptions clone() throws CloneNotSupportedException {
+	public final PengineBuilder clone() throws CloneNotSupportedException {
 		// TODO Auto-generated method stub
-		return (PengineOptions)super.clone();
+		return (PengineBuilder)super.clone();
 	}
 
 	/**
@@ -252,5 +252,19 @@ public final class PengineOptions implements Cloneable {
 		this.alias = alias;
 	}
 	
+	/* ======================================   Implement PengineFactory =========================== */
+	public Pengine newPengine() throws CouldNotCreateException {
+		return new Pengine(this);
+	}
+	
+	/* eventually we have this, and subclass Pengine with PengineOnce and PengineMany, which return Query
+	public Query newPengineOnce(String ask) {
+		return newPengineOnce(this.po, ask);
+	}
+	
+	public Query newPengineOnce(PengineOptions po, String ask) {
+				
+	}
+	*/
 	
 }

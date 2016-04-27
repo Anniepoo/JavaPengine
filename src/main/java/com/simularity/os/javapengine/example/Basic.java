@@ -28,7 +28,7 @@ import java.net.MalformedURLException;
 import com.simularity.os.javapengine.CouldNotCreateException;
 import com.simularity.os.javapengine.Pengine;
 import com.simularity.os.javapengine.PengineFactory;
-import com.simularity.os.javapengine.PengineOptions;
+import com.simularity.os.javapengine.PengineBuilder;
 
 /**
  * @author anniepoo
@@ -40,7 +40,7 @@ public final class Basic {
 	 * 
 	 */
 	public Basic() {
-		// TODO Auto-generated constructor stub
+	
 	}
 // TODO lots more testing of PengineOptions and create
 	
@@ -49,10 +49,11 @@ public final class Basic {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		PengineOptions po = new PengineOptions();
+		PengineBuilder po = new PengineBuilder();
 		try {
 			po.setServer("http://localhost:9900/");
-			Pengine p = PengineFactory.d().newPengine(po);
+			Pengine p = po.newPengine();
+			p.dumpStateDebug();
 		} catch (MalformedURLException e) {
 			System.err.println("Bad URL" + e.getMessage());
 			e.printStackTrace();
