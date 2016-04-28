@@ -4,14 +4,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
 
 /*
  * Copyright (c) 2016 Simularity Inc.
@@ -110,6 +106,10 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		if(this.srcurl != null) {
 			job.add("srcurl", this.srcurl.toString());
 		}
+		
+		// test protocol
+		job.add("ask", "member((X,Y), [(a(taco),3),(b,4),(c,5)])");
+		// job.add("template", "X");
 		
 		// this will be a json object with fields for options
 		// sample, as a prolog dict

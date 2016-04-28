@@ -28,6 +28,7 @@ THE SOFTWARE.
  * 
  */
 import java.net.URL;
+import java.util.Iterator;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
@@ -53,6 +54,11 @@ public final class Pengine {
 	private final PengineBuilder po;
 	@SuppressWarnings("unused")
 	private final String pengineID;
+	private JsonObject availableAnswer = null; // might have several
+	// set to true when the pengine is destroyed
+	// note that we might still have answers held
+	private boolean destroyed = false;
+	private Query currentQuery = null;
 	
 	/**
 	 * Create a new pengine object from a set of {@link PengineBuilder}.
@@ -96,6 +102,9 @@ public final class Pengine {
 			con.setRequestProperty("Content-type", "application/json");
 
 			String urlParameters = po.getRequestBodyCreate();
+			
+			// TODO think this out away from computer
+			this.currentQuery = po.getAskQuery();
 
 			// Send post request
 			con.setDoOutput(true);
@@ -116,7 +125,7 @@ public final class Pengine {
 
 			int responseCode = con.getResponseCode();
 			if(responseCode < 200 || responseCode > 299) {
-				throw new CouldNotCreateException("bad response code" + Integer.toString(responseCode));
+				throw new CouldNotCreateException("bad response code (if 500, query was invalid? query threw Prolog exception?)" + Integer.toString(responseCode));
 			}
 
 			BufferedReader in = new BufferedReader(
@@ -142,11 +151,21 @@ public final class Pengine {
 			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
 			JsonObject respObject = jr.readObject();
 			
+			// TODO handle answer here
+			if(respObject.containsKey("answer")) {
+				handleAnswer(respObject.getJsonObject("answer"));
+			}
+			
 			JsonString eventjson = (JsonString)respObject.get("event");
 			String evtstr = eventjson.getString();
 			
-			if(!evtstr.equals("create")) {
-				throw new CouldNotCreateException("create request returned an event other than create");
+			// TODO store slave_limit and have accessor
+			if(evtstr.equals("destroy")) {
+				this.destroyed = true;
+			} else if(evtstr.equals("create")) {
+				;
+			} else {
+				throw new CouldNotCreateException("create request event was" + evtstr + " must be create or destroy");
 			}
 			
 			String id = ((JsonString)respObject.get("id")).getString();
@@ -154,7 +173,53 @@ public final class Pengine {
 			
 		} catch (IOException e) {
 			throw new CouldNotCreateException(e.toString());
+		} catch(SyntaxErrorException e) {
+			throw new CouldNotCreateException(e.getMessage());
 		}
+	}
+
+	/**
+	 * @param jsonObject
+	 * @throws SyntaxErrorException 
+	 */
+	private void handleAnswer(JsonObject answer) throws SyntaxErrorException {
+		if(answer.containsKey("event")) {
+			switch( ((JsonString)answer.get("event")).getString()) {
+			case	"success":
+				handleData(answer, true);
+				break;
+			case	"destroy":
+				this.destroyed = true;
+				handleData(answer, true);
+				break;
+			case	"failure":
+				handleData(answer, false);
+			default:
+				throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
+			}
+		}
+		/*
+		 * 
+		 * 		          "answer":{
+		             "data":{
+		                   "event":"failure",
+		                   "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
+		                   "time":0.000019857999999999985
+		                   },
+		             "event":"destroy",
+		             "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206"
+		         },
+		 */
+		
+	}
+
+	/**
+	 * @param answer
+	 * @param b
+	 */
+	private void handleData(JsonObject answer, boolean b) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	/**
@@ -163,51 +228,14 @@ public final class Pengine {
 	public void dumpStateDebug() {
 		System.err.println(this.pengineID);
 	}
+
+	/**
+	 * @param string
+	 * @param string2
+	 * @return
+	 */
+	public Iterator<Proof> ask(String string, String string2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
-/*
- * This project has involved a lot of experimenting, as hte protocol is poorly documented. As such,
- * I'm retaining my notes here
- */
-// <domain>/<path>/pengine/create
-// application/json
-// see server_url/4, line 1529 of pengines.pl
-/*
-* HTTP/1.1 200 OK
-Server: nginx/1.4.6 (Ubuntu)
-Date: Wed, 20 Apr 2016 20:53:39 GMT
-Content-Type: text/x-prolog; charset=UTF-8
-Content-Length: 65
-Connection: close
-
-http://www.oracle.com/technetwork/articles/java/json-1973242.html
-
-Asks response looks like
-success('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
-	[q(b)],
-	1.1307000000002065e-5,
-	true)
-	
-	the last item is whether there are more
-	
-then when you get the last one, and it does a destroy (I guess?)
-
-destroy('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
-	success('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
-		[q(c)],
-		2.1917999999999244e-5,
-		false))
-		
-		
-	from pengines.pl http_pengine_create/1
-	
-	%   HTTP POST handler  for  =/pengine/create=.   This  API  accepts  the
-%   pengine  creation  parameters  both  as  =application/json=  and  as
-%   =www-form-encoded=.
-
-Looks like event_to_json we want the lang to be json-s maybe? certainly need to look into it.
-For the moment, just json
-
-
-
-
-*/

@@ -24,36 +24,42 @@ THE SOFTWARE.
 package com.simularity.os.javapengine.example;
 
 import java.net.MalformedURLException;
+import java.util.Iterator;
 
 import com.simularity.os.javapengine.CouldNotCreateException;
 import com.simularity.os.javapengine.Pengine;
 import com.simularity.os.javapengine.PengineBuilder;
+import com.simularity.os.javapengine.Proof;
 
 /**
  * @author anniepoo
  *
  */
-public final class Basic {
+public class ManualAsk {
 
 	/**
 	 * 
 	 */
-	public Basic() {
-	
+	public ManualAsk() {
+		// TODO Auto-generated constructor stub
 	}
-// TODO lots more testing of PengineOptions and create
-	
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		PengineBuilder po = new PengineBuilder();
-		
 		try {
 			po.setServer("http://localhost:9900/");
 			Pengine p = po.newPengine();
 			p.dumpStateDebug();
+			for(Iterator<Proof> iter = p.ask("member(X, [a,b,c])", "X"); iter.hasNext() ; ) {
+				Proof proof = iter.next();
+				
+				
+			}
+			
 		} catch (MalformedURLException e) {
 			System.err.println("Bad URL" + e.getMessage());
 			e.printStackTrace();
@@ -62,5 +68,6 @@ public final class Basic {
 			e.printStackTrace();
 		}
 	}
+
 
 }
