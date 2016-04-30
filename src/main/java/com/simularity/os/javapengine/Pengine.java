@@ -98,7 +98,6 @@ public final class Pengine {
 		try {
 			pengineID = create(po);
 		} catch (PengineNotReadyException e) {
-			// TODO Auto-generated catch block
 			state.destroy();
 			throw new CouldNotCreateException("Pengine wasnt ready????");
 		}
@@ -179,7 +178,7 @@ public final class Pengine {
 			}
 			
 			if(po.getAsk() != null) {
-				this.currentQuery = this.makeQuery(po.getAsk(), false);
+				this.currentQuery = new Query(this, po.getAsk(), false);
 				state.setState(PSt.ASK);
 			}
 			
@@ -199,21 +198,6 @@ public final class Pengine {
 			state.destroy();
 			throw new CouldNotCreateException(e.getMessage());
 		} 
-	}
-
-	/**
-	 * Create a query
-	 * 
-	 * @param ask   The string to query the Pengine slave with
-	 * @param queryMaster     if true, we will actually query the master
-	 * @return  the new query
-	 * @throws PengineNotReadyException 
-	 */
-	private Query makeQuery(String ask, boolean queryMaster) throws PengineNotReadyException {
-		
-		// TODO add support for queryMaster being true
-		
-		return new Query(this, ask, queryMaster);
 	}
 
 	/**
@@ -247,8 +231,7 @@ public final class Pengine {
 				}
 			}
 		} catch (PengineNotReadyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new SyntaxErrorException(e.getMessage());
 		}
 	}
 		/*

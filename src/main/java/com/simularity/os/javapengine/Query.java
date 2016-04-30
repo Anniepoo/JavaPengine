@@ -67,10 +67,13 @@ public class Query {
 
 	/**
 	 * @param pengine
-	 * @param query
+	 * @param ask
+	 * @throws PengineNotReadyException 
 	 */
-	Query(Pengine pengine, String query) {
-		// TODO Auto-generated constructor stub
+	Query(Pengine pengine, String ask) throws PengineNotReadyException {
+		p = pengine;
+		
+		p.doAsk(this, ask);
 	}
 
 	/**

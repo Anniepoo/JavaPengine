@@ -36,20 +36,20 @@ import com.simularity.os.javapengine.Query;
  * @author anniepoo
  *
  */
-public class ManualAsk {
+public abstract class ManualAsk {
 
 	/**
 	 * 
 	 */
-	public ManualAsk() {
-		// TODO Auto-generated constructor stub
+	private ManualAsk() {
+		// class only exists to call main on
 	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		
 		PengineBuilder po = new PengineBuilder();
 		try {
 			po.setServer("http://localhost:9900/");
