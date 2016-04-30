@@ -36,7 +36,7 @@ THE SOFTWARE.
  * no, even better, make some subclasses of this and throw them
  * 
  */
-public class CouldNotCreateException extends Exception {
+public class CouldNotCreateException extends PengineException {
 	private String message;
 	
 	/**
@@ -45,6 +45,7 @@ public class CouldNotCreateException extends Exception {
 	 * @param message  the message returned by getMessage()
 	 */
 	public CouldNotCreateException(String message) {
+		super(message);
 		this.message = message;
 	}
 

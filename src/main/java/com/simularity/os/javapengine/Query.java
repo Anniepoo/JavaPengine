@@ -23,10 +23,108 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine;
 
+import java.util.Iterator;
+import java.util.Vector;
+
+import javax.json.JsonArray;
+import javax.json.JsonValue;
+
 /**
  * @author anniepoo
  *
+ * is this a public class, or a 
  */
 public class Query {
 
+	private boolean hasMore = true;  // there are more answers on the server
+	private Pengine p;
+	private Vector<JsonValue> availProofs = new Vector<JsonValue>();
+	
+	// TODO Query must call the pengine back when it's returned it's last answer so the pengine can let go
+	
+	/**
+	 * @param pengine
+	 * @param ask
+	 * @param queryMaster
+	 * @throws PengineNotReadyException 
+	 */
+	Query(Pengine pengine, String ask, boolean queryMaster) throws PengineNotReadyException {
+		p = pengine;
+		
+		if(queryMaster) {
+			p.doAsk(this, ask);
+		}
+	}
+	
+	/**
+	 * @param pengine
+	 * @param query
+	 * @param template
+	 */
+	Query(Pengine pengine, String query, String template) {
+		// TODO Auto-generated constructor stub
+	}
+
+	/**
+	 * @param pengine
+	 * @param query
+	 */
+	Query(Pengine pengine, String query) {
+		// TODO Auto-generated constructor stub
+	}
+
+	/**
+	 * return the next proof, or null if not available
+	 * 
+	 * @return
+	 * @throws PengineNotReadyException 
+	 */
+	public Proof next() throws PengineNotReadyException {
+		if(!availProofs.isEmpty())
+			return new Proof(availProofs.get(0));
+		
+		if(!this.hasMore) {
+			p.iAmFinished(this);
+			return null;
+		}
+		
+		p.doNext(this);
+		
+		if(availProofs.isEmpty()) {
+			this.hasMore = false;
+			p.iAmFinished(this);
+			return null;
+		}
+		
+		return new Proof(availProofs.get(0));
+	}
+	
+	// TODO make version with template
+
+	/**
+	 * signal the query that there are no more Proofs of the query available.
+	 */
+	void noMore() {
+		hasMore = false;
+		if(availProofs.isEmpty())
+			p.iAmFinished(this);
+		
+		// we might be held externally, waiting to deliver last Proof or no-more-Proof result
+	}
+
+	/**
+	 * @param newDataPoints
+	 */
+	void addNewData(JsonArray newDataPoints) {
+		for(Iterator<JsonValue> iter = newDataPoints.listIterator(); iter.hasNext() ; availProofs.add(iter.next()));
+	}
+
+	// TODO make this a real iterator
+	
+	/**
+	 * @return
+	 */
+	public boolean hasNext() {
+		return hasMore || !availProofs.isEmpty();
+	}
 }

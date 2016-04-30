@@ -61,16 +61,16 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	 * @return
 	 * @throws CouldNotCreateException 
 	 */
-	URL getActualURL(String action) throws CouldNotCreateException {
+	URL getActualURL(String action) throws PengineNotReadyException {
 		StringBuffer msg = new StringBuffer("none");
 		
 		if(server == null) {
-			throw new CouldNotCreateException("Cannot get actual URL without setting server");
+			throw new PengineNotReadyException("Cannot get actual URL without setting server");
 		}
 		try {		
 			URI uribase = server.toURI();
 			if (uribase.isOpaque()) {
-				throw new CouldNotCreateException("Cannot get actual URL without setting server");
+				throw new PengineNotReadyException("Cannot get actual URL without setting server");
 			}
 			
 			URI relative = new URI("/pengine/" + action);
@@ -79,9 +79,9 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 			msg.append(fulluri.toString());
 			return fulluri.toURL();
 		} catch (MalformedURLException e) {
-			throw new CouldNotCreateException("Cannot form actual URL for action " + action + " from uri " + msg.toString());
+			throw new PengineNotReadyException("Cannot form actual URL for action " + action + " from uri " + msg.toString());
 		} catch (URISyntaxException e) {
-			throw new CouldNotCreateException("URISyntaxException in getActualURL");
+			throw new PengineNotReadyException("URISyntaxException in getActualURL");
 		}
 	}
 
@@ -252,9 +252,28 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		this.alias = alias;
 	}
 	
+	// todo synchronize all this, so we can't change during the pengine create time
+	
 	/* ======================================   Implement PengineFactory =========================== */
 	public Pengine newPengine() throws CouldNotCreateException {
 		return new Pengine(this);
+	}
+
+	/**
+	 * @param ask2
+	 * @return
+	 */
+	public String getRequestBodyAsk(String ask2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getRequestBodyNext() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	/* eventually we have this, and subclass Pengine with PengineOnce and PengineMany, which return Query

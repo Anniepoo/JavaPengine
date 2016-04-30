@@ -28,18 +28,14 @@ THE SOFTWARE.
  * 
  */
 import java.net.URL;
-import java.util.Iterator;
 
 import javax.json.Json;
-import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
-import javax.json.JsonValue;
-import javax.json.stream.JsonParser;
-import javax.json.stream.JsonParserFactory;
+
+import com.simularity.os.javapengine.PengineState.PSt;
 
 /**
  * This object is a reference to a remote pengine slave.
@@ -52,30 +48,60 @@ import javax.json.stream.JsonParserFactory;
 public final class Pengine {
 	// we copy the passed in object to make it immutable
 	private final PengineBuilder po;
-	@SuppressWarnings("unused")
 	private final String pengineID;
-	private JsonObject availableAnswer = null; // might have several
-	// set to true when the pengine is destroyed
-	// note that we might still have answers held
-	private boolean destroyed = false;
-	private Query currentQuery = null;
+	
+	private PengineState state = new PengineState();
 	
 	/**
-	 * Create a new pengine object from a set of {@link PengineBuilder}.
-	 * The {@link PengineBuilder} are cloned internally, so the passed 
-	 * PengineOptions can be modified after this call
+	 * Pengines are created, used, and destroyed. 
+	 * If the Pengine has been destroyed you can't use it any more.
 	 * 
-	 * @param poo the PengineOptions to pass
+	 * @return true iff I've been destroyed
+	 */
+	public boolean isDestroyed() {
+		return state.isIn(PengineState.PSt.DESTROYED);
+	}
+
+	/**
+	 * If the Pengine is currently servicing the query, this will return the current Query.
+	 * if not, it returns null.
+	 * 
+	 * Using the interactor metaphor, this returns null if it's at the ?- prompt, and the Query
+	 * if it's at the 'blinking cursor waiting for ; or .' state
+	 * 
+	 * @return the current Query or null if there isn't one
+	 * 
+	 */
+	public Query getCurrentQuery() {
+		return currentQuery;
+	}
+
+	// the current query, or null
+	private Query currentQuery = null;
+	private int slave_limit = -1;
+	
+	/**
+	 * Create a new pengine object from a {@link PengineBuilder}.
+	 * 
+	 * @param poo the PengineBuilder that's creating this Pengine
+	 * 
 	 * @throws CouldNotCreateException  if for any reason the pengine cannot be created
 	 */
 	Pengine(final PengineBuilder poo) throws CouldNotCreateException {
 		try {
 			this.po = (PengineBuilder) poo.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new CouldNotCreateException("PengineOptions must be clonable");
+			state.destroy();
+			throw new CouldNotCreateException("PengineBuilder must be clonable");
 		}
 		
-		pengineID = create(po);
+		try {
+			pengineID = create(po);
+		} catch (PengineNotReadyException e) {
+			// TODO Auto-generated catch block
+			state.destroy();
+			throw new CouldNotCreateException("Pengine wasnt ready????");
+		}
 	}
 
 	/**
@@ -85,8 +111,11 @@ public final class Pengine {
 	 * @return the ID of the created pengine
 	 * 
 	 * @throws CouldNotCreateException if we can't make the pengine
+	 * @throws PengineNotReadyException 
 	 */
-	private String create(PengineBuilder po) throws CouldNotCreateException {
+	private String create(PengineBuilder po) throws CouldNotCreateException, PengineNotReadyException {
+		state.must_be_in(PSt.NOT_CREATED);
+		
 		URL url = po.getActualURL("create");
 		StringBuffer response;
 
@@ -102,9 +131,6 @@ public final class Pengine {
 			con.setRequestProperty("Content-type", "application/json");
 
 			String urlParameters = po.getRequestBodyCreate();
-			
-			// TODO think this out away from computer
-			this.currentQuery = po.getAskQuery();
 
 			// Send post request
 			con.setDoOutput(true);
@@ -112,15 +138,8 @@ public final class Pengine {
 			try {
 				wr.writeBytes(urlParameters);
 				wr.flush();
-			} catch (IOException e) {
-				throw new CouldNotCreateException(e.getMessage());
 			} finally {
-				try {
-					wr.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					throw new CouldNotCreateException(e.toString());
-				}
+				wr.close();
 			}
 
 			int responseCode = con.getResponseCode();
@@ -136,46 +155,72 @@ public final class Pengine {
 				while ((inputLine = in.readLine()) != null) {
 					response.append(inputLine);
 				}
-			} catch (IOException e) {
-				throw new CouldNotCreateException(e.toString());
 			} finally {
-				try {
-					in.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					throw new CouldNotCreateException(e.toString());
-				}
+				in.close();
 			}
 			
 			JsonReaderFactory jrf = Json.createReaderFactory(null);
 			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
 			JsonObject respObject = jr.readObject();
 			
-			// TODO handle answer here
-			if(respObject.containsKey("answer")) {
-				handleAnswer(respObject.getJsonObject("answer"));
+			if(respObject.containsKey("slave_limit")) {
+				this.slave_limit  = respObject.getJsonNumber("slave_limit").intValue();
 			}
 			
 			JsonString eventjson = (JsonString)respObject.get("event");
 			String evtstr = eventjson.getString();
 			
-			// TODO store slave_limit and have accessor
 			if(evtstr.equals("destroy")) {
-				this.destroyed = true;
+				state.setState(PSt.DESTROYED);
 			} else if(evtstr.equals("create")) {
-				;
+				state.setState(PSt.IDLE);
 			} else {
 				throw new CouldNotCreateException("create request event was" + evtstr + " must be create or destroy");
 			}
 			
+			if(po.getAsk() != null) {
+				this.currentQuery = this.makeQuery(po.getAsk(), false);
+				state.setState(PSt.ASK);
+			}
+			
+			if(respObject.containsKey("answer")) {
+				handleAnswer(respObject.getJsonObject("answer"));
+			}
+
 			String id = ((JsonString)respObject.get("id")).getString();
+			if(id == null) 
+				throw new CouldNotCreateException("no pengine id in create message");
 			return id;
 			
 		} catch (IOException e) {
+			state.destroy();
 			throw new CouldNotCreateException(e.toString());
 		} catch(SyntaxErrorException e) {
+			state.destroy();
 			throw new CouldNotCreateException(e.getMessage());
-		}
+		} 
+	}
+
+	/**
+	 * Create a query
+	 * 
+	 * @param ask   The string to query the Pengine slave with
+	 * @param queryMaster     if true, we will actually query the master
+	 * @return  the new query
+	 * @throws PengineNotReadyException 
+	 */
+	private Query makeQuery(String ask, boolean queryMaster) throws PengineNotReadyException {
+		
+		// TODO add support for queryMaster being true
+		
+		return new Query(this, ask, queryMaster);
+	}
+
+	/**
+	 * @return the slave_limit
+	 */
+	public int getSlave_limit() {
+		return slave_limit;
 	}
 
 	/**
@@ -183,24 +228,32 @@ public final class Pengine {
 	 * @throws SyntaxErrorException 
 	 */
 	private void handleAnswer(JsonObject answer) throws SyntaxErrorException {
-		if(answer.containsKey("event")) {
-			switch( ((JsonString)answer.get("event")).getString()) {
-			case	"success":
-				handleData(answer, true);
-				break;
-			case	"destroy":
-				this.destroyed = true;
-				handleData(answer, true);
-				break;
-			case	"failure":
-				handleData(answer, false);
-			default:
-				throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
+		try {
+			if(answer.containsKey("event")) {
+				switch( ((JsonString)answer.get("event")).getString()) {
+				case	"success":
+						handleData(answer, true);
+					break;
+				case	"destroy":
+					handleData(answer, true);
+					currentQuery.noMore();
+					state.setState(PSt.DESTROYED);
+					break;
+				case	"failure":
+					currentQuery.noMore();
+					handleData(answer, false);
+				default:
+					throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
+				}
 			}
+		} catch (PengineNotReadyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+	}
 		/*
 		 * 
-		 * 		          "answer":{
+		 * 		   "answer":{
 		             "data":{
 		                   "event":"failure",
 		                   "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
@@ -210,16 +263,26 @@ public final class Pengine {
 		             "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206"
 		         },
 		 */
-		
-	}
 
 	/**
 	 * @param answer
-	 * @param b
+	 * @param validData whether the data within this answer is a new answer (eg it won't be if we failed)
+	 * @throws PengineNotReadyException 
 	 */
-	private void handleData(JsonObject answer, boolean b) {
-		// TODO Auto-generated method stub
+	private void handleData(JsonObject answer, boolean validData) throws PengineNotReadyException {
+		if(validData && answer.containsKey("data") &&
+				answer.getJsonObject("data").containsKey("event") &&
+				answer.getJsonObject("data").getJsonString("event").equals("success"))
+			this.currentQuery.addNewData(answer.getJsonArray("data"));
 		
+		if(answer.containsKey("more")) {
+			boolean more = answer.getBoolean("more");
+			
+			if(!more) {
+				state.setState(PSt.IDLE);
+				this.currentQuery.noMore();
+			}
+		}
 	}
 
 	/**
@@ -230,12 +293,204 @@ public final class Pengine {
 	}
 
 	/**
-	 * @param string
-	 * @param string2
+	 * @param query
+	 * @param template
 	 * @return
+	 * @throws PengineNotReadyException 
 	 */
-	public Iterator<Proof> ask(String string, String string2) {
-		// TODO Auto-generated method stub
-		return null;
+	public Query ask(String query, String template) throws PengineNotReadyException {
+		state.must_be_in(PSt.IDLE);
+		
+		if(this.currentQuery != null)
+			throw new PengineNotReadyException("Have not extracted all answers from previous query (or stopped it)");
+		
+		this.currentQuery = new Query(this, query, template);
+		
+		return this.currentQuery;
+	}
+
+
+	/**
+	 * @param query
+	 * @return
+	 * @throws PengineNotReadyException 
+	 */
+	public Query ask(String query) throws PengineNotReadyException {
+		state.must_be_in(PSt.IDLE);
+		
+		if(this.currentQuery != null)
+			throw new PengineNotReadyException("Have not extracted all answers from previous query (or stopped it)");
+		
+		this.currentQuery = new Query(this, query);
+		
+		return this.currentQuery;
+	}
+	
+	/**
+	 * @param ask 
+	 * @param query 
+	 * @throws CouldNotCreateException 
+	 * 
+	 */
+	void doAsk(Query query, String ask) throws PengineNotReadyException {
+		state.must_be_in(PSt.IDLE, PSt.ASK);
+		
+		URL url = po.getActualURL("ask");
+		StringBuffer response;
+// TODO can we abstract this?
+		
+		try {
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			// above should get us an HttpsURLConnection if it's https://...
+
+			//add request header
+			con.setRequestMethod("POST");
+			con.setRequestProperty("User-Agent", "JavaPengine");
+			con.setRequestProperty("Accept", "application/json");
+			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+			con.setRequestProperty("Content-type", "application/json");
+
+			String urlParameters = po.getRequestBodyAsk(ask);
+
+			// Send post request
+			con.setDoOutput(true);
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			try {
+				wr.writeBytes(urlParameters);
+				wr.flush();
+			} finally {
+				wr.close();
+			}
+
+			int responseCode = con.getResponseCode();
+			if(responseCode < 200 || responseCode > 299) {
+				throw new PengineNotAvailableException("bad response code (if 500, perhaps query was invalid? Or query threw Prolog exception?)" + Integer.toString(responseCode));
+			}
+
+			BufferedReader in = new BufferedReader(
+					new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			response = new StringBuffer();
+			try {
+				while ((inputLine = in.readLine()) != null) {
+					response.append(inputLine);
+				}
+			} finally {
+				in.close();
+			}
+			
+			JsonReaderFactory jrf = Json.createReaderFactory(null);
+			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
+			JsonObject respObject = jr.readObject();
+			
+			JsonString eventjson = (JsonString)respObject.get("event");
+			String evtstr = eventjson.getString();
+			
+			// TODO need to use this much of it to probe
+			
+			if(respObject.containsKey("answer")) {
+				handleAnswer(respObject.getJsonObject("answer"));
+			}
+			
+		} catch (IOException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.toString());
+		} catch(SyntaxErrorException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		}
+		
+	}
+
+	/**
+	 *  the query will not use the pengine again and has no more results to give
+	 *  
+	 *  
+	 * @param query
+	 */
+	void iAmFinished(Query query) {
+		if(query.equals(this.currentQuery))
+			this.currentQuery = null;
+		
+		if(state.equals(PSt.ASK)) {
+			try {
+				state.setState(PSt.IDLE);
+			} catch (PengineNotReadyException e) {
+				System.err.println("Internal error in iAmFinished");
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * @param query
+	 * @throws PengineNotReadyException 
+	 */
+	public void doNext(Query query) throws PengineNotReadyException {
+		state.must_be_in(PSt.ASK);
+		try {
+			URL url = po.getActualURL("next");
+			StringBuffer response;
+// TODO can we abstract this?
+		
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			// above should get us an HttpsURLConnection if it's https://...
+
+			//add request header
+			con.setRequestMethod("POST");
+			con.setRequestProperty("User-Agent", "JavaPengine");
+			con.setRequestProperty("Accept", "application/json");
+			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+			con.setRequestProperty("Content-type", "application/json");
+
+			String urlParameters = po.getRequestBodyNext();
+
+			// Send post request
+			con.setDoOutput(true);
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			try {
+				wr.writeBytes(urlParameters);
+				wr.flush();
+			} finally {
+				wr.close();
+			}
+
+			int responseCode = con.getResponseCode();
+			if(responseCode < 200 || responseCode > 299) {
+				throw new PengineNotAvailableException("bad response code (if 500, perhaps query was invalid? Or query threw Prolog exception?)" + Integer.toString(responseCode));
+			}
+
+			BufferedReader in = new BufferedReader(
+					new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			response = new StringBuffer();
+			try {
+				while ((inputLine = in.readLine()) != null) {
+					response.append(inputLine);
+				}
+			} finally {
+				in.close();
+			}
+			
+			JsonReaderFactory jrf = Json.createReaderFactory(null);
+			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
+			JsonObject respObject = jr.readObject();
+			
+			JsonString eventjson = (JsonString)respObject.get("event");
+			String evtstr = eventjson.getString();
+			
+			// TODO need to use this much of it to probe
+			
+			if(respObject.containsKey("answer")) {
+				handleAnswer(respObject.getJsonObject("answer"));
+			}
+			
+		} catch (IOException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.toString());
+		} catch(SyntaxErrorException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		}
 	}
 }

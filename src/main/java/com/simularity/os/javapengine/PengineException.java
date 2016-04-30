@@ -23,31 +23,22 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine;
 
-import javax.json.JsonValue;
-
 /**
  * @author anniepoo
  *
  */
-public class Proof {
+public class PengineException extends Exception {
 
 	/**
-	 * @param jsonValue
+	 * @param string
 	 */
-	Proof(JsonValue jsonValue) {
+	public PengineException(String string) {
 		// TODO Auto-generated constructor stub
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
+	/**
+	 * 
 	 */
-	@Override
-	public String toString() {
-		// TODO Auto-generated method stub
-		// TODO probably important for people who 'just want the value'
-		return super.toString();
-	}
-	
-	
+	private static final long serialVersionUID = -8420345616408412643L;
 
 }

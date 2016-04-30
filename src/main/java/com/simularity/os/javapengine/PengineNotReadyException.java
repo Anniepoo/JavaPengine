@@ -23,31 +23,26 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine;
 
-import javax.json.JsonValue;
-
 /**
  * @author anniepoo
  *
+ * the user has attempted to perform some operation on the pengine when it wasn't ready to 
+ * perform that operation
+ * 
  */
-public class Proof {
+public class PengineNotReadyException extends PengineException {
+
 
 	/**
-	 * @param jsonValue
+	 * 
 	 */
-	Proof(JsonValue jsonValue) {
-		// TODO Auto-generated constructor stub
-	}
+	private static final long serialVersionUID = 1838967274556465606L;
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
+	/**
+	 * @param string
 	 */
-	@Override
-	public String toString() {
-		// TODO Auto-generated method stub
-		// TODO probably important for people who 'just want the value'
-		return super.toString();
+	public PengineNotReadyException(String string) {
+		super(string);
 	}
-	
-	
 
 }

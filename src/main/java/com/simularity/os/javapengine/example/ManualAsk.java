@@ -24,12 +24,13 @@ THE SOFTWARE.
 package com.simularity.os.javapengine.example;
 
 import java.net.MalformedURLException;
-import java.util.Iterator;
 
 import com.simularity.os.javapengine.CouldNotCreateException;
 import com.simularity.os.javapengine.Pengine;
 import com.simularity.os.javapengine.PengineBuilder;
+import com.simularity.os.javapengine.PengineNotReadyException;
 import com.simularity.os.javapengine.Proof;
+import com.simularity.os.javapengine.Query;
 
 /**
  * @author anniepoo
@@ -54,10 +55,10 @@ public class ManualAsk {
 			po.setServer("http://localhost:9900/");
 			Pengine p = po.newPengine();
 			p.dumpStateDebug();
-			for(Iterator<Proof> iter = p.ask("member(X, [a,b,c])", "X"); iter.hasNext() ; ) {
-				Proof proof = iter.next();
+			for(Query q = p.ask("member(X, [a,b,c])"); q.hasNext() ; ) {
+				Proof proof = q.next();
 				
-				
+				System.out.println(proof.toString());
 			}
 			
 		} catch (MalformedURLException e) {
@@ -65,6 +66,9 @@ public class ManualAsk {
 			e.printStackTrace();
 		} catch (CouldNotCreateException e) {
 			System.err.println("cannot make pengine" + e.getMessage());
+			e.printStackTrace();
+		} catch (PengineNotReadyException e) {
+			System.err.println("pengine not ready" + e.getMessage());
 			e.printStackTrace();
 		}
 	}
