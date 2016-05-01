@@ -14,14 +14,15 @@
 		        if no first solution job.add("ask", "member(X, [])");
 		        {
 		          "answer":{
-		             "data":{
-		                   "event":"failure",
-		                   "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
-		                   "time":0.000019857999999999985
-		                   },
-		             "event":"destroy",
-		             "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206"
-		         },
+			             "data":{
+			                   "event":"failure",
+			                   "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
+			                   "time":0.000019857999999999985
+			                   },
+			             "event":"destro.
+			             y",
+			             "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206"
+			         },
 		         "event":"create",
 		         "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
 		         "slave_limit":3
@@ -29,7 +30,7 @@
 		         
 		         What happens if job.add("ask", "member(X, ][])");  (syntax invalid)?
 		         it returns 500
-		         (doucment that it also 500's if it throws an uncaught exception)
+		         (document that it also 500's if it throws an uncaught exception)
 		         
 		         what if we don't use template?
 		         {  

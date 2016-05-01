@@ -108,7 +108,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		}
 		
 		// test protocol
-		job.add("ask", "member((X,Y), [(a(taco),3),(b,4),(c,5)])");
+	//	job.add("ask", "member((X,Y), [(a(taco),3),(b,4),(c,5)])");
 		// job.add("template", "X");
 		
 		// this will be a json object with fields for options
@@ -260,12 +260,35 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	}
 
 	/**
-	 * @param ask2
-	 * @return
+	 * return the POST body for a /pengines/ask request of ask
+	 * 
+	 * @param id   The pengine id that is transmitting
+	 * @param ask   The Prolog query
+	 * @return   the body
 	 */
-	public String getRequestBodyAsk(String ask2) {
-		// TODO Auto-generated method stub
-		return null;
+	public String getRequestBodyAsk(String id, String ask) {
+		JsonBuilderFactory factory = Json.createBuilderFactory(null);  // TODO should this be static member?
+		JsonObjectBuilder job = factory.createObjectBuilder();
+		
+		if(!this.destroy) {
+			job.add("destroy", "false");
+		}
+		if(this.chunk > 1) {
+			job.add("chunk", this.chunk);
+		}
+		job.add("format", this.format);
+
+		job.add("ask", ask);
+		job.add("id", id);
+		
+		// test protocol
+	//	job.add("ask", "member((X,Y), [(a(taco),3),(b,4),(c,5)])");
+		// job.add("template", "X");
+		
+		// this will be a json object with fields for options
+		// sample, as a prolog dict
+		//_{ src_text:"\n            q(X) :- p(X).\n            p(a). p(b). p(c).\n        "}
+		return job.build().toString();
 	}
 
 	/**
@@ -276,7 +299,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		return null;
 	}
 	
-	/* eventually we have this, and subclass Pengine with PengineOnce and PengineMany, which return Query
+	/* eventually we have this
 	public Query newPengineOnce(String ask) {
 		return newPengineOnce(this.po, ask);
 	}
@@ -284,6 +307,18 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	public Query newPengineOnce(PengineOptions po, String ask) {
 				
 	}
+	
+	public Proof newPengineOnceDet(PengineOptions po) {
+	
+	}	
+	// consider removing ask from PengineOptions, force it to be passed in to PengineBuilder to get an initial ask.
+	// it's cleaner conceptually
+	// also consider passing destroy explicitly as an optional parameter
+	public Proof newPengineOnceDet(PengineOptions po, String ask) {
+	
+	}
+	
+	
 	*/
 	
 }

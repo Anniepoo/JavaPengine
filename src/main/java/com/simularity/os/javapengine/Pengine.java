@@ -34,6 +34,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
+import javax.json.JsonValue;
 
 import com.simularity.os.javapengine.PengineState.PSt;
 
@@ -318,7 +319,7 @@ public final class Pengine {
 	void doAsk(Query query, String ask) throws PengineNotReadyException {
 		state.must_be_in(PSt.IDLE, PSt.ASK);
 		
-		URL url = po.getActualURL("ask");
+		URL url = po.getActualURL("send");
 		StringBuffer response;
 // TODO can we abstract this?
 		
@@ -333,7 +334,7 @@ public final class Pengine {
 			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 			con.setRequestProperty("Content-type", "application/json");
 
-			String urlParameters = po.getRequestBodyAsk(ask);
+			String urlParameters = po.getRequestBodyAsk(this.getID(), ask);
 
 			// Send post request
 			con.setDoOutput(true);
@@ -475,5 +476,13 @@ public final class Pengine {
 			state.destroy();
 			throw new PengineNotAvailableException(e.getMessage());
 		}
+	}
+
+	/**
+	 * @return
+	 */
+	public String getID() {
+		state.must_be_in(PSt.ASK, PSt.IDLE);
+		return this.pengineID;
 	}
 }
