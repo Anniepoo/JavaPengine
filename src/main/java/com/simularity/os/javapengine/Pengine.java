@@ -34,7 +34,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
-import javax.json.JsonValue;
 
 import com.simularity.os.javapengine.PengineState.PSt;
 
@@ -103,20 +102,23 @@ public final class Pengine {
 			throw new CouldNotCreateException("Pengine wasnt ready????");
 		}
 	}
-
+	
 	/**
-	 * does the actual creation, as a famulus of the constructor.
+	 * Low level famulus to abstract out some of the HTTP handling common to all requests
 	 * 
-	 * @param po the cloned PengineOptions
-	 * @return the ID of the created pengine
+	 * @param url   The actual url to httpRequest
+	 * @param contentType  The value string of the Content-Type header
+	 * @param body    the body of the POST request
+	 * @return  the returned JSON object
 	 * 
-	 * @throws CouldNotCreateException if we can't make the pengine
-	 * @throws PengineNotReadyException 
+	 * @throws CouldNotCreateException
+	 * @throws IOException 
 	 */
-	private String create(PengineBuilder po) throws CouldNotCreateException, PengineNotReadyException {
-		state.must_be_in(PSt.NOT_CREATED);
-		
-		URL url = po.getActualURL("create");
+	private JsonObject penginePost(
+			URL url,
+			String contentType,
+			String body
+			) throws IOException {
 		StringBuffer response;
 
 		try {
@@ -128,15 +130,13 @@ public final class Pengine {
 			con.setRequestProperty("User-Agent", "JavaPengine");
 			con.setRequestProperty("Accept", "application/json");
 			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-			con.setRequestProperty("Content-type", "application/json");
-
-			String urlParameters = po.getRequestBodyCreate();
+			con.setRequestProperty("Content-type", contentType);
 
 			// Send post request
 			con.setDoOutput(true);
 			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
 			try {
-				wr.writeBytes(urlParameters);
+				wr.writeBytes(body);
 				wr.flush();
 			} finally {
 				wr.close();
@@ -144,7 +144,7 @@ public final class Pengine {
 
 			int responseCode = con.getResponseCode();
 			if(responseCode < 200 || responseCode > 299) {
-				throw new CouldNotCreateException("bad response code (if 500, query was invalid? query threw Prolog exception?)" + Integer.toString(responseCode));
+				throw new IOException("bad response code (if 500, query was invalid? query threw Prolog exception?)" + Integer.toString(responseCode));
 			}
 
 			BufferedReader in = new BufferedReader(
@@ -163,6 +163,32 @@ public final class Pengine {
 			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
 			JsonObject respObject = jr.readObject();
 			
+			return respObject;
+		} catch (IOException e) {
+			state.destroy();
+			throw e;
+		}
+	}
+	
+
+	/**
+	 * does the actual creation, as a famulus of the constructor.
+	 * 
+	 * @param po the cloned PengineOptions
+	 * @return the ID of the created pengine
+	 * 
+	 * @throws CouldNotCreateException if we can't make the pengine
+	 * @throws PengineNotReadyException 
+	 */
+	private String create(PengineBuilder po) throws CouldNotCreateException, PengineNotReadyException {
+		state.must_be_in(PSt.NOT_CREATED);
+		
+		try{
+			JsonObject respObject = penginePost(
+					po.getActualURL("create"), 
+					"application/json", 
+					po.getRequestBodyCreate());
+				
 			if(respObject.containsKey("slave_limit")) {
 				this.slave_limit  = respObject.getJsonNumber("slave_limit").intValue();
 			}
@@ -186,15 +212,14 @@ public final class Pengine {
 			if(respObject.containsKey("answer")) {
 				handleAnswer(respObject.getJsonObject("answer"));
 			}
-
+	
 			String id = ((JsonString)respObject.get("id")).getString();
 			if(id == null) 
 				throw new CouldNotCreateException("no pengine id in create message");
 			return id;
-			
 		} catch (IOException e) {
 			state.destroy();
-			throw new CouldNotCreateException(e.toString());
+			throw new CouldNotCreateException(e.getMessage());
 		} catch(SyntaxErrorException e) {
 			state.destroy();
 			throw new CouldNotCreateException(e.getMessage());
@@ -209,6 +234,8 @@ public final class Pengine {
 	}
 
 	/**
+	 * handle the result of a send
+	 * 
 	 * @param jsonObject
 	 * @throws SyntaxErrorException 
 	 */
@@ -218,7 +245,7 @@ public final class Pengine {
 				switch( ((JsonString)answer.get("event")).getString()) {
 				case	"success":
 					if(answer.containsKey("data")) {
-						additionalDataArrived(answer.getJsonObject("data"));
+						currentQuery.addNewData(answer.getJsonArray("data"));
 					}
 					if(answer.containsKey("more")) {
 						if(!answer.getBoolean("more")) {
@@ -229,7 +256,8 @@ public final class Pengine {
 					
 				case	"destroy":
 					if(answer.containsKey("data")) {
-						additionalDataArrived(answer.getJsonObject("data"));
+						// if it contains a data key, then strangely, it's an 'answer' structure
+						handleAnswer(answer.getJsonObject("data"));
 					}
 					currentQuery.noMore();
 					state.setState(PSt.DESTROYED);
@@ -246,28 +274,6 @@ public final class Pengine {
 		} catch (PengineNotReadyException e) {
 			throw new SyntaxErrorException(e.getMessage());
 		}
-	}
-		/*
-		 * 
-		 * 		   "answer":{
-		             "data":{
-		                   "event":"failure",
-		                   "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206",
-		                   "time":0.000019857999999999985
-		                   },
-		             "event":"destroy",
-		             "id":"c7e9e0c5-84b6-4faa-bbcb-1e1139df1206"
-		         },
-		 */
-
-	/**
-	 * @param answer    the data element
-	 */
-	private void additionalDataArrived(JsonObject answer) {
-		if(answer.containsKey("data") &&
-				answer.getJsonObject("data").containsKey("event") &&
-				answer.getJsonObject("data").getJsonString("event").equals("success"))
-			this.currentQuery.addNewData(answer.getJsonArray("data"));
 	}
 
 	/**
@@ -318,63 +324,23 @@ public final class Pengine {
 	 * 
 	 */
 	void doAsk(Query query, String ask) throws PengineNotReadyException {
-		state.must_be_in(PSt.IDLE, PSt.ASK);
+		state.must_be_in(PSt.IDLE);
+		if(currentQuery == null)
+			this.currentQuery = query;		
+		else
+			throw new PengineNotReadyException("You already have a query in process");
 		
-		URL url = po.getActualURL("send", this.getID());
-		StringBuffer response;
-// TODO can we abstract this?
-		
+		state.setState(PSt.ASK);
 		try {
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			// above should get us an HttpsURLConnection if it's https://...
-
-			//add request header
-			con.setRequestMethod("POST");
-			con.setRequestProperty("User-Agent", "JavaPengine");
-			con.setRequestProperty("Accept", "application/json");
-			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-			con.setRequestProperty("Content-type", "application/x-prolog; charset=UTF-8");
-
-			String urlParameters = po.getRequestBodyAsk(this.getID(), ask);
-
-			// Send post request
-			con.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-			try {
-				wr.writeBytes(urlParameters);
-				wr.flush();
-			} finally {
-				wr.close();
-			}
-
-			int responseCode = con.getResponseCode();
-			if(responseCode < 200 || responseCode > 299) {
-				throw new PengineNotAvailableException("bad response code (if 500, perhaps query was invalid? Or query threw Prolog exception?)" + Integer.toString(responseCode));
-			}
-
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(con.getInputStream()));
-			String inputLine;
-			response = new StringBuffer();
-			try {
-				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
-				}
-			} finally {
-				in.close();
-			}
+			JsonObject answer =  penginePost(
+					po.getActualURL("send", this.getID()),
+					"application/x-prolog; charset=UTF-8",
+					po.getRequestBodyAsk(this.getID(), ask));
 			
-			JsonReaderFactory jrf = Json.createReaderFactory(null);
-			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
-			JsonObject respObject = jr.readObject();
-			
-			if(respObject.containsKey("data")) {
-				handleAnswer(respObject);
-			}
-			
+			handleAnswer(answer);
 		} catch (IOException e) {
 			state.destroy();
-			throw new PengineNotAvailableException(e.toString());
+			throw new PengineNotAvailableException(e.getMessage());
 		} catch(SyntaxErrorException e) {
 			state.destroy();
 			throw new PengineNotAvailableException(e.getMessage());
@@ -383,7 +349,7 @@ public final class Pengine {
 	}
 
 	/**
-	 *  the query will not use the pengine again and has no more results to give
+	 *  the query will not use the pengine again
 	 *  
 	 *  
 	 * @param query
@@ -408,66 +374,20 @@ public final class Pengine {
 	 */
 	public void doNext(Query query) throws PengineNotReadyException {
 		state.must_be_in(PSt.ASK);
-		try {
-			URL url = po.getActualURL("next");
-			StringBuffer response;
-// TODO can we abstract this?
+		if(!query.equals(currentQuery)) {
+			throw new PengineNotReadyException("Cannot advance more than one query - finish one before starting next");
+		}
 		
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			// above should get us an HttpsURLConnection if it's https://...
-
-			//add request header
-			con.setRequestMethod("POST");
-			con.setRequestProperty("User-Agent", "JavaPengine");
-			con.setRequestProperty("Accept", "application/json");
-			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-			con.setRequestProperty("Content-type", "application/json");
-
-			String urlParameters = po.getRequestBodyNext();
-
-			// Send post request
-			con.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-			try {
-				wr.writeBytes(urlParameters);
-				wr.flush();
-			} finally {
-				wr.close();
-			}
-
-			int responseCode = con.getResponseCode();
-			if(responseCode < 200 || responseCode > 299) {
-				throw new PengineNotAvailableException("bad response code (if 500, perhaps query was invalid? Or query threw Prolog exception?)" + Integer.toString(responseCode));
-			}
-
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(con.getInputStream()));
-			String inputLine;
-			response = new StringBuffer();
-			try {
-				while ((inputLine = in.readLine()) != null) {
-					response.append(inputLine);
-				}
-			} finally {
-				in.close();
-			}
+		try {
+			JsonObject respObject =  penginePost(
+					po.getActualURL("send", this.getID()),
+					"application/x-prolog; charset=UTF-8",
+					po.getRequestBodyNext());
 			
-			JsonReaderFactory jrf = Json.createReaderFactory(null);
-			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
-			JsonObject respObject = jr.readObject();
-			
-			JsonString eventjson = (JsonString)respObject.get("event");
-			String evtstr = eventjson.getString();
-			
-			// TODO need to use this much of it to probe
-			
-			if(respObject.containsKey("answer")) {
-				handleAnswer(respObject.getJsonObject("answer"));
-			}
-			
+			handleAnswer(respObject);
 		} catch (IOException e) {
 			state.destroy();
-			throw new PengineNotAvailableException(e.toString());
+			throw new PengineNotAvailableException(e.getMessage());
 		} catch(SyntaxErrorException e) {
 			state.destroy();
 			throw new PengineNotAvailableException(e.getMessage());

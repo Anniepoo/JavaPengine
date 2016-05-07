@@ -30,8 +30,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import com.simularity.os.javapengine.PengineState.PSt;
-
 /**
  * @author anniepoo
  *
@@ -41,7 +39,7 @@ public class Query {
 
 	private boolean hasMore = true;  // there are more answers on the server
 	private Pengine p;
-	private Vector<JsonValue> availProofs = new Vector<JsonValue>();
+	private Vector<JsonObject> availProofs = new Vector<JsonObject>();
 	
 	// TODO Query must call the pengine back when it's returned it's last answer so the pengine can let go
 	
@@ -82,27 +80,46 @@ public class Query {
 	/**
 	 * return the next proof, or null if not available
 	 * 
-	 * @return
+	 * Note that it is theoretically impossible to always know that there are more
+	 * proofs available. Caller always needs to be ready to handle a null
+	 * 
+	 * It is guaranteed that if you get a null from this the query is done and will
+	 * never return a non-null in the future.
+	 * 
+	 * @return  the next proof, or null if not available
 	 * @throws PengineNotReadyException 
 	 */
 	public Proof next() throws PengineNotReadyException {
-		if(!availProofs.isEmpty())
-			return new Proof(availProofs.get(0));
+		// the was data available
+		if(!availProofs.isEmpty()) {
+			JsonObject data = availProofs.get(0);
+			availProofs.remove(0);
+			if(!hasMore && availProofs.isEmpty())
+				p.iAmFinished(this);
+			
+			return new Proof(data);
+		}
 		
-		if(!this.hasMore) {
-			p.iAmFinished(this);
+		// we don't have any available and the server's done
+		if(!hasMore) {
 			return null;
 		}
 		
+		// try to get more from the server
 		p.doNext(this);
 		
-		if(availProofs.isEmpty()) {
-			this.hasMore = false;
-			p.iAmFinished(this);
+		// if we now have data, we have to do just like above
+		if(!availProofs.isEmpty()) {
+			JsonObject data = availProofs.get(0);
+			availProofs.remove(0);
+			if(!hasMore && availProofs.isEmpty())
+				p.iAmFinished(this);
+			return new Proof(data);
+		} else {  // we asked for data and didn't get it, the server must be done
+			if(hasMore)System.err.println("Why is hasMore true here?");
+			
 			return null;
 		}
-		
-		return new Proof(availProofs.get(0));
 	}
 	
 	// TODO make version with template
@@ -111,6 +128,9 @@ public class Query {
 	 * signal the query that there are no more Proofs of the query available.
 	 */
 	void noMore() {
+		if(!hasMore)  // must never call iAmFinished more than once
+			return;
+		
 		hasMore = false;
 		if(availProofs.isEmpty())
 			p.iAmFinished(this);
@@ -122,7 +142,7 @@ public class Query {
 	 * @param newDataPoints
 	 */
 	void addNewData(JsonArray newDataPoints) {
-		for(Iterator<JsonValue> iter = newDataPoints.listIterator(); iter.hasNext() ; availProofs.add(iter.next()));
+		for(Iterator<JsonValue> iter = newDataPoints.listIterator(); iter.hasNext() ; availProofs.add( ((JsonObject)iter.next())));
 	}
 
 	// TODO make this a real iterator

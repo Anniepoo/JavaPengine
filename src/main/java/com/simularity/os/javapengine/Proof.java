@@ -23,19 +23,24 @@ THE SOFTWARE.
  */
 package com.simularity.os.javapengine;
 
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
+import javax.json.JsonValue.ValueType;
 
 /**
  * @author anniepoo
  *
  */
 public class Proof {
-
+	JsonObject json;
+	
 	/**
 	 * @param jsonValue
 	 */
-	Proof(JsonValue jsonValue) {
-		// TODO Auto-generated constructor stub
+	Proof(JsonObject jsonValue) {
+		json = jsonValue;
 	}
 
 	/* (non-Javadoc)
@@ -43,11 +48,53 @@ public class Proof {
 	 */
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		// TODO probably important for people who 'just want the value'
-		return super.toString();
+		return json.toString();
 	}
 	
+	public JsonValue getValue(String key) {
+		return json.get(key);
+	}
 	
-
+	public JsonObject getValues() {
+		return json;
+	}
+	
+	public String getString(String key) {
+		switch (json.get(key).getValueType()) {
+		case STRING:
+			return ((JsonString)json.get(key)).getString();
+		default:
+			return json.get(key).toString();
+		}
+	}
+	
+	public int getInt(String key) {
+		if (json.get(key).getValueType() == ValueType.NUMBER)
+			return ((JsonNumber)json.get(key)).intValueExact();
+		else
+			return Integer.parseInt(getString(key));
+	}
+	
+	public int getNearestInt(String key) {
+		if (json.get(key).getValueType() == ValueType.NUMBER)
+			return ((JsonNumber)json.get(key)).intValue();
+		else
+			return Integer.parseInt(getString(key));
+	}
+	
+	public double getDouble(String key) {
+		if (json.get(key).getValueType() == ValueType.NUMBER)
+			return ((JsonNumber)json.get(key)).doubleValue();
+		else
+			return Double.parseDouble(getString(key));
+	}
 }
+/*
+{"X":{"args":["taco"],"functor":"a"}}
+{"X":"b"}
+{"X":"c"}
+
+querying true gives an empty objectg
+
+{}
+*/

@@ -322,7 +322,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		return sb.toString();
 		
 		//request_uri('/pengine/send?id=d401db37-61b3-4d5b-9c17-9588d274ef7e'),
-		// http_pengine_send requires id, event, and format 
+		// http_pengine_send requires id, event, and format l
 		// format is prolog   (that's the default)
 		// EventString is optional, probably from body
 		// calls read_event
@@ -337,7 +337,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	 */
 	public String getRequestBodyNext() {
 		// TODO Auto-generated method stub
-		return null;
+		return "next.";
 	}
 
 	

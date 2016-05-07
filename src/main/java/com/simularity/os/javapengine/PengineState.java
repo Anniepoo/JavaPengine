@@ -77,6 +77,7 @@ public class PengineState {
 			allowed.add(new Transition(PSt.IDLE, PSt.ASK));
 			allowed.add(new Transition(PSt.ASK, PSt.IDLE));	
 			allowed.add(new Transition(PSt.IDLE, PSt.DESTROYED));
+			allowed.add(new Transition(PSt.ASK, PSt.DESTROYED));
 			allowed.add(new Transition(PSt.NOT_CREATED, PSt.DESTROYED)); // if we can't create it
 	}
 	

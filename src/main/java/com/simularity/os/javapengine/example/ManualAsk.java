@@ -55,7 +55,7 @@ public abstract class ManualAsk {
 			po.setServer("http://localhost:9900/");
 			Pengine p = po.newPengine();
 			p.dumpStateDebug();
-			for(Query q = p.ask("member(X, [a,b,c])"); q.hasNext() ; ) {
+			for(Query q = p.ask("member(X, [a(taco),2,c])"); q.hasNext() ; ) {
 				Proof proof = q.next();
 				
 				System.out.println(proof.toString());

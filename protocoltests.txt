@@ -134,6 +134,25 @@ destroy('8eb2ec31-fd63-43a2-a80b-4552b6d505d7',
 Looks like event_to_json we want the lang to be json-s maybe? certainly need to look into it.
 For the moment, just json
 
+Next uri looks like
+
+'/pengine/send?id=421ec554-f15c-4798-b10d-897831727bef
+(it's the same id,event,format handler in http_pengine_send, so same possible args)
+
+and returns this strange critter
+
+    
+{"data":
+         {"data":[{"X":"c"}],
+         "event":"success",
+         "id":"4c53430f-9570-4e05-9036f6b5fc63dd8c",
+         "more":false,
+         "time":0.00003951999999999992
+     },
+     "event":"destroy",
+     "id":"4c53430f-9570-4e05-9036-f6b5fc63dd8c"
+}
+
 
 
 
