@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
-package com.simularity.os.javapengine;
+package com.simularity.os.javapengine.exception;
 
 /**
  * @author anniepoo

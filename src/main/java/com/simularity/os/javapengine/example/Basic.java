@@ -25,9 +25,9 @@ package com.simularity.os.javapengine.example;
 
 import java.net.MalformedURLException;
 
-import com.simularity.os.javapengine.CouldNotCreateException;
 import com.simularity.os.javapengine.Pengine;
 import com.simularity.os.javapengine.PengineBuilder;
+import com.simularity.os.javapengine.exception.CouldNotCreateException;
 
 /**
  * @author anniepoo

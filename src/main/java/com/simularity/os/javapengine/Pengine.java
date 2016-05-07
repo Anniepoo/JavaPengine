@@ -1,4 +1,28 @@
+/**
+ * Copyright (c) 2016 Simularity Inc.
+ * 
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+ * 
+ */
 package com.simularity.os.javapengine;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -36,11 +60,15 @@ import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
 
 import com.simularity.os.javapengine.PengineState.PSt;
+import com.simularity.os.javapengine.exception.CouldNotCreateException;
+import com.simularity.os.javapengine.exception.PengineNotAvailableException;
+import com.simularity.os.javapengine.exception.PengineNotReadyException;
+import com.simularity.os.javapengine.exception.SyntaxErrorException;
 
 /**
  * This object is a reference to a remote pengine slave.
  * 
- * To make one use {@link PengineFactory}
+ * To make one use {@link PengineBuilder}
  * 
  * @author anniepoo
  *
@@ -259,13 +287,17 @@ public final class Pengine {
 						// if it contains a data key, then strangely, it's an 'answer' structure
 						handleAnswer(answer.getJsonObject("data"));
 					}
-					currentQuery.noMore();
+					if(currentQuery != null)
+						currentQuery.noMore();
 					state.setState(PSt.DESTROYED);
 					break;
 					
 				case	"failure":
 					currentQuery.noMore();
 					break;
+					
+				case	"error":
+					throw new SyntaxErrorException("Error - probably invalid Prolog query?");
 					
 				default:
 					throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
@@ -281,6 +313,12 @@ public final class Pengine {
 	 */
 	public void dumpStateDebug() {
 		System.err.println(this.pengineID);
+		System.err.println("slave_limit " + this.slave_limit);
+		if(this.currentQuery != null)
+			this.currentQuery.dumpDebugState();
+		this.po.dumpDebugState();
+		this.state.dumpDebugState();
+		
 	}
 
 	/**
@@ -400,5 +438,46 @@ public final class Pengine {
 	public String getID() {
 		state.must_be_in(PSt.ASK, PSt.IDLE);
 		return this.pengineID;
+	}
+
+	/**
+	 * Destroy the pengine.
+	 * this makes a best attempt to destroy the pengine.
+	 * 
+	 * after calling destroy you should not further release the pengine
+	 */
+	public void destroy() {
+		if(state.isIn(PSt.DESTROYED))
+			return;
+		
+		if(state.isIn(PSt.NOT_CREATED)) {
+			state.destroy();
+			return;
+		}
+			
+		state.must_be_in(PSt.ASK, PSt.IDLE);
+		
+		try {
+			JsonObject respObject =  penginePost(
+					po.getActualURL("send", this.getID()),
+					"application/x-prolog; charset=UTF-8",
+					po.getRequestBodyDestroy());
+			
+			handleAnswer(respObject);
+		} catch (IOException e) {
+			e.printStackTrace();
+			//throw new PengineNotAvailableException(e.getMessage());
+		} catch(SyntaxErrorException e) {
+			e.printStackTrace();
+			//throw new PengineNotAvailableException(e.getMessage());
+		} catch (PengineNotReadyException e) {
+			e.printStackTrace();
+		} finally {
+			state.destroy();
+		}
+	}
+	
+	protected void finalize() {
+		destroy();
 	}
 }

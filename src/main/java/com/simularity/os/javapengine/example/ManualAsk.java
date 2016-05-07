@@ -25,12 +25,12 @@ package com.simularity.os.javapengine.example;
 
 import java.net.MalformedURLException;
 
-import com.simularity.os.javapengine.CouldNotCreateException;
 import com.simularity.os.javapengine.Pengine;
 import com.simularity.os.javapengine.PengineBuilder;
-import com.simularity.os.javapengine.PengineNotReadyException;
 import com.simularity.os.javapengine.Proof;
 import com.simularity.os.javapengine.Query;
+import com.simularity.os.javapengine.exception.CouldNotCreateException;
+import com.simularity.os.javapengine.exception.PengineNotReadyException;
 
 /**
  * @author anniepoo
@@ -60,7 +60,29 @@ public abstract class ManualAsk {
 				
 				System.out.println(proof.toString());
 			}
+			p.dumpStateDebug();
 			
+			System.err.println("now make one that sticks around");
+			po.setDestroy(false);
+			Pengine p2 = po.newPengine();
+			p2.dumpStateDebug();
+			for(Query q = p2.ask("member(X, [a(taco),2,c])"); q.hasNext() ; ) {
+				Proof proof = q.next();
+				
+				System.out.println(proof.toString());
+			}
+			
+			System.out.println("that felt good, lets do another one");
+			
+			for(Query q = p2.ask("(between(1,5, X), Y is 2 * X)"); q.hasNext() ; ) {
+				Proof proof = q.next();
+				
+				System.out.println(proof.toString());
+			}
+			
+			p2.dumpStateDebug();
+			p2.destroy();
+			p2.dumpStateDebug();			
 		} catch (MalformedURLException e) {
 			System.err.println("Bad URL" + e.getMessage());
 			e.printStackTrace();

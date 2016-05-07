@@ -30,6 +30,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import com.simularity.os.javapengine.exception.PengineNotReadyException;
+
 /**
  * @author anniepoo
  *
@@ -152,5 +154,18 @@ public class Query {
 	 */
 	public boolean hasNext() {
 		return hasMore || !availProofs.isEmpty();
+	}
+
+	/**
+	 * 
+	 */
+	public void dumpDebugState() {
+		if(this.hasMore)
+			System.err.println("has more solutions");
+		else
+			System.err.println("no more solutions");
+		
+		System.err.println("availproofs" + this.availProofs.toString());
+		System.err.println("pengine is " + this.p.getID());
 	}
 }

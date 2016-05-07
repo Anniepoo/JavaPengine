@@ -24,6 +24,8 @@ THE SOFTWARE.
 package com.simularity.os.javapengine;
 
 import java.util.ArrayList;
+
+import com.simularity.os.javapengine.exception.PengineNotReadyException;
 /**
  * @author anniepoo
  *
@@ -142,6 +144,48 @@ public class PengineState {
 	void destroy() {
 		this.state = PSt.DESTROYED; 
 		
+	}
+
+	/**
+	 * 
+	 */
+	public void dumpDebugState() {
+		System.err.println("state " + this.state.toString());
+		
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		return this.state.hashCode();
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if(obj == this)
+			return true;
+		
+		if(obj instanceof PengineState) {
+			return ( ((PengineState)obj).getState().equals(this.state));
+		}
+		
+		if(obj instanceof PSt) {
+			return obj.equals(this.state);
+		}
+		return false;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return state.toString();
 	}
 	
 	

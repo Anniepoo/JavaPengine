@@ -11,6 +11,9 @@ import javax.json.Json;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
 
+import com.simularity.os.javapengine.exception.CouldNotCreateException;
+import com.simularity.os.javapengine.exception.PengineNotReadyException;
+
 /*
  * Copyright (c) 2016 Simularity Inc.
  * 
@@ -34,7 +37,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
-public final class PengineBuilder implements Cloneable, PengineFactory {
+public final class PengineBuilder implements Cloneable {
 	private URL server = null;
 	private String application = "sandbox";
 	private String ask = null;
@@ -42,7 +45,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	private boolean destroy = true;
 	private String srctext = null;
 	private URL srcurl = null;
-	private String format = "json";   // TODO make this an enum
+	private final String format = "json";
 	private String alias = null;
 	
 	/**
@@ -57,7 +60,6 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	/**
 	 * Get the actual URL to request from
 	 * 
-	 * TODO change action from string to enum
 	 * 
 	 * @param action the action to request - create, send, etc - as a string. Note this is the URI endpoint name, not the pengine action
 	 * @return the URL to perform the request to
@@ -91,15 +93,13 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	/**
 	 * Get the actual URL to request from
 	 * 
-	 * TODO change action from string to enum
-	 * 
 	 * @param action the action to request - create, send, etc - as a string. Note this is the URI endpoint name, not the pengine action
 	 * @param id the pengine ID
 	 * @return the created URL
 	 * 
 	 * @throws PengineNotReadyException 
 	 */
-	public URL getActualURL(String action, String id) throws PengineNotReadyException  {
+	URL getActualURL(String action, String id) throws PengineNotReadyException  {
 		StringBuffer msg = new StringBuffer("none");
 		
 		if(server == null) {
@@ -271,20 +271,6 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	}
 
 	/**
-	 * @return the format, one of "json" (default), "json-s", or "prolog"
-	 */
-	public String getFormat() {
-		return format;
-	}
-
-	/**
-	 * @param format the response format, one of "json" (default), "json-s", or "prolog"
-	 */
-	public void setFormat(String format) {
-		this.format = format;
-	}
-
-	/**
 	 * @return the alias or null
 	 */
 	public String getAlias() {
@@ -336,8 +322,34 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	 * @return
 	 */
 	public String getRequestBodyNext() {
-		// TODO Auto-generated method stub
 		return "next.";
+	}
+
+	/**
+	 * @return
+	 */
+	public String getRequestBodyDestroy() {
+		return "destroy.";
+	}
+
+	/**
+	 * 
+	 */
+	public void dumpDebugState() {
+		System.err.println("--- PengineBuilder ----");
+		System.err.println("alias " + this.alias);
+		System.err.println("application " + this.application);
+		System.err.println("ask " + this.ask);
+		System.err.println("chunk size " + Integer.toString(this.chunk));
+		if(this.destroy)
+			System.err.println("destroy at end of query");
+		else
+			System.err.println("retain at end of query");
+		
+		System.err.println("server " + this.server);
+		System.err.println("srctext " + this.srctext);
+		System.err.println("srcurl " + this.srcurl);
+		System.err.println("--- end PengineBuilder ---");
 	}
 
 	

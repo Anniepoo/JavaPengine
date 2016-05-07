@@ -21,28 +21,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  * 
  */
-package com.simularity.os.javapengine;
+package com.simularity.os.javapengine.exception;
 
 /**
  * @author anniepoo
  *
- * the user has attempted to perform some operation on the pengine when it wasn't ready to 
- * perform that operation
- * 
  */
-public class PengineNotReadyException extends PengineException {
-
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1838967274556465606L;
+public class PengineException extends Exception {
 
 	/**
 	 * @param string
 	 */
-	public PengineNotReadyException(String string) {
-		super(string);
+	public PengineException(String string) {
+		// TODO Auto-generated constructor stub
 	}
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8420345616408412643L;
 
 }
