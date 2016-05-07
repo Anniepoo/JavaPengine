@@ -1,9 +1,11 @@
 package com.simularity.os.javapengine;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
@@ -57,9 +59,10 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	 * 
 	 * TODO change action from string to enum
 	 * 
-	 * @param action the action to request - create, ask, next, etc - as a string
-	 * @return
-	 * @throws CouldNotCreateException 
+	 * @param action the action to request - create, send, etc - as a string. Note this is the URI endpoint name, not the pengine action
+	 * @return the URL to perform the request to
+	 * 
+	 * @throws PengineNotReadyException 
 	 */
 	URL getActualURL(String action) throws PengineNotReadyException {
 		StringBuffer msg = new StringBuffer("none");
@@ -76,6 +79,49 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 			URI relative = new URI("/pengine/" + action);
 			
 			URI fulluri = uribase.resolve(relative);
+			msg.append(fulluri.toString());
+			return fulluri.toURL();
+		} catch (MalformedURLException e) {
+			throw new PengineNotReadyException("Cannot form actual URL for action " + action + " from uri " + msg.toString());
+		} catch (URISyntaxException e) {
+			throw new PengineNotReadyException("URISyntaxException in getActualURL");
+		}
+	}
+	
+	/**
+	 * Get the actual URL to request from
+	 * 
+	 * TODO change action from string to enum
+	 * 
+	 * @param action the action to request - create, send, etc - as a string. Note this is the URI endpoint name, not the pengine action
+	 * @param id the pengine ID
+	 * @return the created URL
+	 * 
+	 * @throws PengineNotReadyException 
+	 */
+	public URL getActualURL(String action, String id) throws PengineNotReadyException  {
+		StringBuffer msg = new StringBuffer("none");
+		
+		if(server == null) {
+			throw new PengineNotReadyException("Cannot get actual URL without setting server");
+		}
+		try {		
+			URI uribase = server.toURI();
+			if (uribase.isOpaque()) {
+				throw new PengineNotReadyException("Cannot get actual URL without setting server");
+			}
+			
+			URI relative;
+			try {
+				relative = new URI("/pengine/" + action + "?format=json&id=" + URLEncoder.encode(id, "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				// stupid checked exception
+				e.printStackTrace();
+				return null;
+			}
+			
+			URI fulluri = uribase.resolve(relative);
+			
 			msg.append(fulluri.toString());
 			return fulluri.toURL();
 		} catch (MalformedURLException e) {
@@ -267,28 +313,23 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 	 * @return   the body
 	 */
 	public String getRequestBodyAsk(String id, String ask) {
-		JsonBuilderFactory factory = Json.createBuilderFactory(null);  // TODO should this be static member?
-		JsonObjectBuilder job = factory.createObjectBuilder();
 		
-		if(!this.destroy) {
-			job.add("destroy", "false");
-		}
-		if(this.chunk > 1) {
-			job.add("chunk", this.chunk);
-		}
-		job.add("format", this.format);
-
-		job.add("ask", ask);
-		job.add("id", id);
+		StringBuilder sb = new StringBuilder();
 		
-		// test protocol
-	//	job.add("ask", "member((X,Y), [(a(taco),3),(b,4),(c,5)])");
-		// job.add("template", "X");
+		sb.append("ask(");
+		sb.append(ask);
+		sb.append(",[]).");     // TODO template, chunk go here
+		return sb.toString();
 		
-		// this will be a json object with fields for options
-		// sample, as a prolog dict
-		//_{ src_text:"\n            q(X) :- p(X).\n            p(a). p(b). p(c).\n        "}
-		return job.build().toString();
+		//request_uri('/pengine/send?id=d401db37-61b3-4d5b-9c17-9588d274ef7e'),
+		// http_pengine_send requires id, event, and format 
+		// format is prolog   (that's the default)
+		// EventString is optional, probably from body
+		// calls read_event
+		//%   Read the sent event. The event is a   Prolog  term that is either in
+		// the =event= parameter or as a posted document.
+        // the body of the request looks like
+		// ask(q(A),[template(A)])
 	}
 
 	/**
@@ -298,6 +339,7 @@ public final class PengineBuilder implements Cloneable, PengineFactory {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 	
 	/* eventually we have this
 	public Query newPengineOnce(String ask) {

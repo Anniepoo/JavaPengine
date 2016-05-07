@@ -217,16 +217,28 @@ public final class Pengine {
 			if(answer.containsKey("event")) {
 				switch( ((JsonString)answer.get("event")).getString()) {
 				case	"success":
-						handleData(answer, true);
+					if(answer.containsKey("data")) {
+						additionalDataArrived(answer.getJsonObject("data"));
+					}
+					if(answer.containsKey("more")) {
+						if(!answer.getBoolean("more")) {
+							currentQuery.noMore();
+						}
+					}
 					break;
+					
 				case	"destroy":
-					handleData(answer, true);
+					if(answer.containsKey("data")) {
+						additionalDataArrived(answer.getJsonObject("data"));
+					}
 					currentQuery.noMore();
 					state.setState(PSt.DESTROYED);
 					break;
+					
 				case	"failure":
 					currentQuery.noMore();
-					handleData(answer, false);
+					break;
+					
 				default:
 					throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
 				}
@@ -249,24 +261,13 @@ public final class Pengine {
 		 */
 
 	/**
-	 * @param answer
-	 * @param validData whether the data within this answer is a new answer (eg it won't be if we failed)
-	 * @throws PengineNotReadyException 
+	 * @param answer    the data element
 	 */
-	private void handleData(JsonObject answer, boolean validData) throws PengineNotReadyException {
-		if(validData && answer.containsKey("data") &&
+	private void additionalDataArrived(JsonObject answer) {
+		if(answer.containsKey("data") &&
 				answer.getJsonObject("data").containsKey("event") &&
 				answer.getJsonObject("data").getJsonString("event").equals("success"))
 			this.currentQuery.addNewData(answer.getJsonArray("data"));
-		
-		if(answer.containsKey("more")) {
-			boolean more = answer.getBoolean("more");
-			
-			if(!more) {
-				state.setState(PSt.IDLE);
-				this.currentQuery.noMore();
-			}
-		}
 	}
 
 	/**
@@ -319,7 +320,7 @@ public final class Pengine {
 	void doAsk(Query query, String ask) throws PengineNotReadyException {
 		state.must_be_in(PSt.IDLE, PSt.ASK);
 		
-		URL url = po.getActualURL("send");
+		URL url = po.getActualURL("send", this.getID());
 		StringBuffer response;
 // TODO can we abstract this?
 		
@@ -332,7 +333,7 @@ public final class Pengine {
 			con.setRequestProperty("User-Agent", "JavaPengine");
 			con.setRequestProperty("Accept", "application/json");
 			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-			con.setRequestProperty("Content-type", "application/json");
+			con.setRequestProperty("Content-type", "application/x-prolog; charset=UTF-8");
 
 			String urlParameters = po.getRequestBodyAsk(this.getID(), ask);
 
@@ -367,13 +368,8 @@ public final class Pengine {
 			JsonReader jr = jrf.createReader(new StringReader(response.toString()));
 			JsonObject respObject = jr.readObject();
 			
-			JsonString eventjson = (JsonString)respObject.get("event");
-			String evtstr = eventjson.getString();
-			
-			// TODO need to use this much of it to probe
-			
-			if(respObject.containsKey("answer")) {
-				handleAnswer(respObject.getJsonObject("answer"));
+			if(respObject.containsKey("data")) {
+				handleAnswer(respObject);
 			}
 			
 		} catch (IOException e) {
