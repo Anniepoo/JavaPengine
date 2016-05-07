@@ -168,4 +168,17 @@ public class Query {
 		System.err.println("availproofs" + this.availProofs.toString());
 		System.err.println("pengine is " + this.p.getID());
 	}
+
+	/**
+	 * @throws PengineNotReadyException 
+	 * 
+	 */
+	public void stop() throws PengineNotReadyException {
+		p.doStop();
+		
+		hasMore = false;
+		availProofs.clear();
+		
+		p.iAmFinished(this);
+	}
 }

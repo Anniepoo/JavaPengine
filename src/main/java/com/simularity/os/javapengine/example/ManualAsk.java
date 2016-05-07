@@ -80,6 +80,26 @@ public abstract class ManualAsk {
 				System.out.println(proof.toString());
 			}
 			
+			System.err.println("Now lets try stopping a query");
+			
+			for(Query q = p2.ask("between(1,5, X)"); q.hasNext() ; ) {
+				Proof proof = q.next();
+
+				System.out.println(proof.toString());
+				
+				if(proof.getNearestInt("X") >= 3) {
+					System.out.println("ok, enough of that");
+					q.stop();
+				}
+			}		
+			System.out.println("whew, glad thats over. Lets see if the pengines still functioning");
+			
+			for(Query q = p2.ask("member(X, [a(taco),2,c])"); q.hasNext() ; ) {
+				Proof proof = q.next();
+				
+				System.out.println(proof.toString());
+			}
+			
 			p2.dumpStateDebug();
 			p2.destroy();
 			p2.dumpStateDebug();			

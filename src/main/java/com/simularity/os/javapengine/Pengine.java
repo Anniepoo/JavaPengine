@@ -296,6 +296,10 @@ public final class Pengine {
 					currentQuery.noMore();
 					break;
 					
+				case	"stop":
+					currentQuery.noMore();
+					break;
+					
 				case	"error":
 					throw new SyntaxErrorException("Error - probably invalid Prolog query?");
 					
@@ -410,7 +414,7 @@ public final class Pengine {
 	 * @param query
 	 * @throws PengineNotReadyException 
 	 */
-	public void doNext(Query query) throws PengineNotReadyException {
+	void doNext(Query query) throws PengineNotReadyException {
 		state.must_be_in(PSt.ASK);
 		if(!query.equals(currentQuery)) {
 			throw new PengineNotReadyException("Cannot advance more than one query - finish one before starting next");
@@ -479,5 +483,28 @@ public final class Pengine {
 	
 	protected void finalize() {
 		destroy();
+	}
+
+	/**
+	 * @throws PengineNotReadyException 
+	 * 
+	 */
+	void doStop() throws PengineNotReadyException {
+		state.must_be_in(PSt.ASK);
+		
+		try {
+			JsonObject respObject =  penginePost(
+					po.getActualURL("send", this.getID()),
+					"application/x-prolog; charset=UTF-8",
+					po.getRequestBodyStop());
+			
+			handleAnswer(respObject); // we might destroy it
+		} catch (IOException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		} catch(SyntaxErrorException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		}
 	}
 }

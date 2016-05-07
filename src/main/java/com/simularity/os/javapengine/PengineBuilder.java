@@ -352,6 +352,13 @@ public final class PengineBuilder implements Cloneable {
 		System.err.println("--- end PengineBuilder ---");
 	}
 
+	/**
+	 * @return
+	 */
+	public String getRequestBodyStop() {
+		return "stop.";
+	}
+
 	
 	/* eventually we have this
 	public Query newPengineOnce(String ask) {
