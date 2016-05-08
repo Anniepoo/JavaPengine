@@ -19,12 +19,14 @@ This library is available as a jar from Maven Central with groupID com.simularit
 The Pengines Architecture
 -------------------------
 
+
 need the whole master-slave architecture section in here
 
 A non-Prolog Programmer's Guide to Prolog Queries
 -------------------------------------------------
 
 If you know Prolog you can skip this section. If not, it should give you enough understanding to make most Pengines queries.
+
 
 you call some predicate. If you put a variable in that position it gets filled in, if a constant it's a where. If you add a neck and a guard it's also a where. You get all the ways Prolog can figure out to fullfill the query (all the proofs).
 

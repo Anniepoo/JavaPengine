@@ -52,6 +52,7 @@ THE SOFTWARE.
  * 
  */
 import java.net.URL;
+import java.util.Vector;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -66,11 +67,19 @@ import com.simularity.os.javapengine.exception.PengineNotReadyException;
 import com.simularity.os.javapengine.exception.SyntaxErrorException;
 
 /**
- * This object is a reference to a remote pengine slave.
+ * A reference to a remote pengine slave.
  * 
  * To make one use {@link PengineBuilder}
  * 
- * @author anniepoo
+ * Lifecycle:
+ * 
+ * Create using {@link PengineBuilder}
+ * Use for one or more Queries
+ * Destroy
+ * 
+ * If you have destroy set to true in PengineBuilder, the Pengine will be destroyed automatically at the end of the query.
+ * 
+ * @author Anne Ogborn
  *
  */
 public final class Pengine {
@@ -107,6 +116,7 @@ public final class Pengine {
 	// the current query, or null
 	private Query currentQuery = null;
 	private int slave_limit = -1;
+	private Vector<String> availOutput = new Vector<String>();
 	
 	/**
 	 * Create a new pengine object from a {@link PengineBuilder}.
@@ -172,7 +182,7 @@ public final class Pengine {
 
 			int responseCode = con.getResponseCode();
 			if(responseCode < 200 || responseCode > 299) {
-				throw new IOException("bad response code (if 500, query was invalid? query threw Prolog exception?)" + Integer.toString(responseCode));
+				throw new IOException("bad response code (if 500, query was invalid? query threw Prolog exception?) " + Integer.toString(responseCode) + " " + url.toString() + " " + body);
 			}
 
 			BufferedReader in = new BufferedReader(
@@ -302,6 +312,11 @@ public final class Pengine {
 					
 				case	"error":
 					throw new SyntaxErrorException("Error - probably invalid Prolog query?");
+					
+				case	"output":
+					String data = answer.getString("data");
+					availOutput.add(data);
+					break;
 					
 				default:
 					throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
@@ -469,13 +484,15 @@ public final class Pengine {
 			
 			handleAnswer(respObject);
 		} catch (IOException e) {
-			e.printStackTrace();
+			// for various reasons the pengine can be already destroyed. We ignore the errors
+			
+			//e.printStackTrace();
 			//throw new PengineNotAvailableException(e.getMessage());
 		} catch(SyntaxErrorException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			//throw new PengineNotAvailableException(e.getMessage());
 		} catch (PengineNotReadyException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		} finally {
 			state.destroy();
 		}
@@ -506,5 +523,61 @@ public final class Pengine {
 			state.destroy();
 			throw new PengineNotAvailableException(e.getMessage());
 		}
+	}
+
+	/**
+	 * 
+	 * @return a string off the serve, if it has one to give
+	 * 
+	 * 
+	 * @throws PengineNotReadyException 
+	 */
+	 void doPullResponse() throws PengineNotReadyException {
+		if(!state.isIn(PSt.IDLE) && !state.isIn(PSt.ASK))
+			return;
+		
+		try {
+			JsonObject respObject =  penginePost(
+					po.getActualURL("pull_response", this.getID()),
+					"application/x-prolog; charset=UTF-8",
+					po.getRequestBodyPullResponse());
+			
+			handleAnswer(respObject); // we might destroy it
+		} catch (IOException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		} catch(SyntaxErrorException e) {
+			state.destroy();
+			throw new PengineNotAvailableException(e.getMessage());
+		}
+	}
+
+	/**
+	 * return one piece of pending output, if any.
+	 * If it doesn't have any to return, it returns null
+	 * 
+	 * @deprecated If you call it when the pengine's not got output it opens a connection that never closes, so using this is definitely not recommended
+	 * 
+	 * @return  output string from slave, or null
+	 * 
+	 * @throws PengineNotReadyException  if the pengine isn't in communication. You need to consume (or at least fetch) all output before the engine is destroyed
+	 */
+	public String getOutput() throws PengineNotReadyException {
+		if(!this.availOutput.isEmpty()) {
+			String out = this.availOutput.firstElement();
+			this.availOutput.remove(0);
+			return out;
+		}
+		
+		if(state.isIn(PSt.ASK) || state.isIn(PSt.IDLE))
+			doPullResponse();
+		
+		if(!this.availOutput.isEmpty()) {
+			String out = this.availOutput.firstElement();
+			this.availOutput.remove(0);
+			return out;
+		}
+		
+		return null;
 	}
 }

@@ -359,6 +359,13 @@ public final class PengineBuilder implements Cloneable {
 		return "stop.";
 	}
 
+	/**
+	 * @return
+	 */
+	public String getRequestBodyPullResponse() {
+		return "pull_response.";
+	}
+
 	
 	/* eventually we have this
 	public Query newPengineOnce(String ask) {

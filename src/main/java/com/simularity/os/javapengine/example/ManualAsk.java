@@ -103,6 +103,30 @@ public abstract class ManualAsk {
 			p2.dumpStateDebug();
 			p2.destroy();
 			p2.dumpStateDebug();			
+			
+			po.setSrctext("speak(X,Y) :- pengine_output(X), between(1,3,Y).");
+			po.setAlias("ioengine");
+			po.setDestroy(false);
+			
+			Pengine io = po.newPengine();
+			
+			for(Query q = io.ask("(pengine_output('cabbages and kings'), between(1,3,X))"); q.hasNext() ; ) {
+				Proof proof = q.next();
+				System.out.println(proof.toString());
+				
+				if (proof.getNearestInt("X") < 3) {  // change this to a larger number to see it hang
+					// this hangs on the last proof
+					// This is referred to in https://github.com/SWI-Prolog/pengines/issues/19
+					String out = io.getOutput();
+					if(out != null) {
+						System.out.println("I got " + out + " from the server");
+					}
+				}
+			}
+			System.out.println("End of query");
+			
+			io.destroy();
+			
 		} catch (MalformedURLException e) {
 			System.err.println("Bad URL" + e.getMessage());
 			e.printStackTrace();
