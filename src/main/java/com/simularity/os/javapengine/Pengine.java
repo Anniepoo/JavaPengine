@@ -318,6 +318,11 @@ public final class Pengine {
 					availOutput.add(data);
 					break;
 					
+				case	"died":
+					// returned by pull_response if we're after the death
+					state.setState(PSt.DESTROYED);
+					break; // report that the pengine 
+					
 				default:
 					throw new SyntaxErrorException("Bad event in answer" + ((JsonString)answer.get("event")).getString());
 				}
@@ -339,13 +344,13 @@ public final class Pengine {
 		this.state.dumpDebugState();
 		
 	}
-
-	/**
+/*
+	
 	 * @param query
 	 * @param template
 	 * @return
 	 * @throws PengineNotReadyException 
-	 */
+	
 	public Query ask(String query, String template) throws PengineNotReadyException {
 		state.must_be_in(PSt.IDLE);
 		
@@ -356,6 +361,7 @@ public final class Pengine {
 		
 		return this.currentQuery;
 	}
+*/
 
 
 	/**

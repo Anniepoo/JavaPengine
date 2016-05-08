@@ -48,6 +48,14 @@ public final class PengineBuilder implements Cloneable {
 	private final String format = "json";
 	private String alias = null;
 	
+	
+	/**
+	 * 
+	 */
+	public PengineBuilder() {
+		super();
+	}
+
 	/**
 	 * @see java.lang.Object#clone()
 	 */

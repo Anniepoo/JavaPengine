@@ -1,148 +1,49 @@
-JavaPengines
-============
+#JavaPengines
 
 A Java language client for Torbjörn Lager's _Pengines_ distributed computing library for
 _[SWI-Prolog](http://swi-prolog.org)_ .
 
-What You need to know to use JavaPengines
------------------------------------------
+JavaPengines is a Java language implementation of the _Pengines_ protocol, a lightweight, powerful query and update protocol for a _Pengines_ server.
 
-ldgkjsdflkdsjfdsds
+Pengines servers dramatically reduce the complexity of performing RPC and sharing _knowledge_ in a mixed technology environment. They can act effectively as 'glue' in a complex system.
 
-Installation
-------------
-
-This library is available as a jar from Maven Central with groupID com.simularity and ArtifactID com.simularity.os.javapengine, or as sources at [Github](http://www.github.com/Simularity/Javapengine/).
-
-*JavaPengine* requires *javax.json*
-
-The Pengines Architecture
--------------------------
-
-
-need the whole master-slave architecture section in here
-
-A non-Prolog Programmer's Guide to Prolog Queries
--------------------------------------------------
-
-If you know Prolog you can skip this section. If not, it should give you enough understanding to make most Pengines queries.
-
-
-you call some predicate. If you put a variable in that position it gets filled in, if a constant it's a where. If you add a neck and a guard it's also a where. You get all the ways Prolog can figure out to fullfill the query (all the proofs).
-
-variables UC atoms lc
-
-prolog atoms, strings, 
-
-you can use any sandbox safe Prolog predicate in the library or any predicate exposed by the server.
-
-you can string them together to make more complex queries
-
-you can store your queries on the server.
-
-
-
-
-
-
-wannu learn prolog do blah blah blah.
-
-drop the sql analogy
-
-
-Consider an SQL query. We (the client) run a (usually small) piece of code (the query) against a set of facts (the contents of the database) in an environment (the DBMS) on a server.
-
-Pengines is similar. We (the client) run a (usually small) piece of code (the query) against a set of facts and rules (the pengine knowledgebase) in an environment (the slave pengine) on a pengines server.
-
-The Prolog knowledgebase is made up of _predicates_, things that are true. Prolog assumes that anything not known to be true is false.
-
-SQL databases contain data - what Prolog calls 'facts'. Bob Smith is an assistant manager who was hired on July 2nd, 2004. A small change makes this a predicate - "It is true that Bob Smith is blah blah blah".
-
-.Prolog facts
-----
-% some facts about a couple employees
-employee('Bob Smith', 'assistant manager', date(7,2,2004)).
-employee('Sally Jones', 'welder', date(8,22,2012)).
-
-% facts that establish that these are management positions
-management_position('director').
-management_position('manager').
-management_position('assistant manager').
-management_position('CEO').
-----
-
-When we query an SQL database we provide some variables to be filled in with values.
-
-----
-SELECT name, position FROM employees;
-----
-
-we get a row for every combination of name and position.
-
-
-Now is where things start to diverge. Prolog databases also contain _rules_, predicates that are true only if some other predicates are true.
-
-
-.Prolog rules
-----
-% a manager is an employee who holds a position that is a management position
-manager(Name) :-
-   employee(Name, Position, _),
-   management_position(Position).
-----
-
-And there's no real distinction between facts and rules to the consumer. Lets suppose besides the CEO we also have a CFO, a CTO, and some other executives. We've already got facts that establish what the executive positions are
-
-.Executives
-----
-executive_position('CEO').
-executive_position('CFO').
-executive_position('CTO').
-executive_position('COO').
-----
-
-We don't have to type all those in to make them management positions. We can make a rule. Lets rewrite our first example.
-
-.Now with the executives
-----
-% some facts about a couple employees
-employee('Bob Smith', 'assistant manager', date(7,2,2004)).
-employee('Sally Jones', 'welder', date(8,22,2012)).
-
-% a management position is either one of the explicitly named positions, or an executive position
-management_position('director').
-management_position('manager').
-management_position('assistant manager').
-management_position(Position) :- 
-    executive_position(Position).
-----
-
-
-
-
-
-
-
-Name and Position in the above are _variables_. 
-
-
-
-
-The Pengines Protocol
----------------------
-
-_Pengines_ is a protocol for sharing _knowledge_ between a client application and a _pengines server_. _JavaPengines_ is a Java language library for Pengines.
+Currently there are clients for JavaScript (in browser), SWI-Prolog, and Java. We expect clients for Ruby, Python, and NodeJS to be written in the next few months.
 
 The query language for Pengines is _Prolog_, and so unsurprisingly, the only current implementation of the Pengines server ships with the _[SWI-Prolog](http://swi-prolog.org)_ environment. SWI-Prolog is probably the most widely used implementation of Prolog, particularly suitable for large _real world_ projects.
 
-Pengines makes this even more explicit.  Creating a Pengine gives the client a sandboxed VM on the server in 
+
+## What You need to know to use JavaPengines
+
+You do *not* need to be an expert in Prolog. The section below should teach you enough to make basic Pengines queries.
+
+You do need to know Java, obviously.
+
+You would also do well to familiarize yourself with the javax.json library.
+
+##Installation
+
+JavaPengines is available as a jar from Maven Central with groupID com.simularity and ArtifactID com.simularity.os.javapengine, or as sources at [Github](http://www.github.com/Simularity/Javapengine/).
+
+JavaPengines requires _javax.json_, which is available from Maven Central. 
 
 
+## Understanding JavaPengine
 
-Understanding JavaPengine
--------------------------
+JavaPengine is a thin wrapper around [http://pengines.swi-prolog.org/docs/index.html](Pengines), and so use requires knowledge of the Pengines system, although only minimal understanding of pengines or of Prolog is sufficient to make basic queries.
 
-JavaPengine is a thin wrapper around [http://pengines.swi-prolog.org/docs/index.html](Pengines), and so best use requires knowledge of the Pengines system, although only minimal understanding of pengines or of Prolog is sufficient to make basic queries.
+The Pengine architecture is simple. The client requests the server to create a Pengine _slave_. The client then sends one or more queries to the slave, and then tells the server to destroy the pengine.
+
+For efficiency, a query can be sent along with the create query. The pengine can be told to destroy itself at the end of the first query. So a Pengine can be created, queried, and destroyed in as little as a single HTTP request.
+
+The queries are simply Prolog code. So the entire power of the Prolog language is available to the client.
+
+Obviously the Pengine server must _sandbox_ the query. So some Prolog library predicates (e.g. shell) are unavailable. But, as much as is consistent with security, the standard Prolog libraries are available to the Pengine slave.
+
+Additionally, Pengine servers usually expose some special predicates (Prolog 'functions' are called predicates). So, for example, a Prolog server could expose a predicate that allows a user to set their profile (presumably also passing some authentication).
+
+Because the Pengine can last longer than one query, the client can store information on the server between queries. This can significantly reduce network traffic during complex graph queries.
+
+### The Pengines Architecture
 
 Unlike imperative programs, in Prolog one constructs a "knowledgebase" of rules about a world, and then asks the system to find proofs of propositions, called queries. So there are two parts to a Prolog program - the rules, and the query.
 
@@ -150,23 +51,24 @@ Pengines extends SWI-Prolog to provide a distributed computing environment. Peng
 
 This is not unlike how web servers supply JavaScript to the browser to execute, with the client in role of the server and the pengine server in role of the web browser.
 
-Obviously doing this in an unconstrained way would be a security issue. So pengines executes the remote-supplied code in a sandbox.
+Each created pengine creates, effectively, it's own Prolog sub-VM. Different pengine slaves see different knowledgebases. 
 
-Each created pengine creates, effectively, it's own Prolog sub-VM. Different pengine slaves see different knowledgebases. The pengine's knowledgebase is a combination of what the server chooses to expose, and what the client supplies. The server supplied part includes the safe parts of the standard Prolog libraries. For a complete explanation of this process, watch [https://www.youtube.com/watch?v=JmOHV5IlPyU](my video from Strange Loop)
+The pengine's knowledgebase is a combination of what the server chooses to expose, and what the client supplies. The server supplied part includes the safe parts of the standard Prolog libraries. 
+
+For a complete explanation of this process, watch [https://www.youtube.com/watch?v=JmOHV5IlPyU](my video from Strange Loop)
 
 This provides lots of benefits. The remote client has a full, Turing complete language available for writing queries. Need some complex natural language scoring function computed to decide whether you need that row of data? Do it on the server.
 
 The remote client can also store data on the server between invocations. Need to hang onto an intermediate stage query? Leave it on the server. Need to do graph traversal looking things? Do it on the server. Have a really complicated query you don't want to transmit for each query? Leave the code for it on the server.
 
-Life Cycle
-----------
+### Life Cycle
 
 A slave pengine is created, used for zero or more queries, and then destroyed, either explicitly or by timing out.
 A common, but not universal, pattern is to create a pengine, query it once, then destroy it. So JavaPengine supports this by allowing you to just make a query and repeatedly ask for the answers.
 
-Prolog queries may return a single answer, but they can also fail (return no answer) or return many answers. This is fundamental to the SLD resolution mechanism at the core of Prolog. But often we know that queries will return a single answer, and we call this being _deterministic_ or _det_. Those other queries are _nondeterministic_, or _nondet_.
+Making a Pengine for a single query is so common that it is the default for PengineBuilder. To retain the Pengine you must call setDestroy(false) on the PengineBuilder.
 
-JavaPengine has special support for making deterministic queries, and for making a single query and then destroying the pengine. This support is not only for convenience, but for efficiency.
+Prolog queries may return a single answer, but they can also fail (return no answer) or return many answers. This is fundamental to the SLD resolution mechanism at the core of Prolog.
 
 In it's most basic use, the pengines protocol requires one HTTP request to create the pengine, one to initiate a query and get the first answer, one for each answer thereafter, and one to destroy the pengine.
 
@@ -177,11 +79,42 @@ The getQuery and getProof methods use these optimizations internally. Their use 
 API
 ---
 
-TODO will write this when it's more ready
+Making a Pengine starts with `com.simularity.os.javapengine.PengineBuilder`. 
 
-Templates
----------
+Make a  new PengineBuilder object, set some values on it, and then user it to make one or more Pengines.
 
-TODO
+the `setDestroy(boolean)` method is particularly important to set. By default it's true, and when the first query done on the pengine has returned it's last result, the pengine destroys itself.
+
+Some arguments to create a Pengine change with each Pengine, like ask. Some are usually constant, like the server's name. It can be useful to have a prototype PengineBuilder around and clone it, then change values on the clone before making the Pengine.
+
+Call `newPengine()` to get a new Pengine.
+
+If you supplied an ask to the PengineBuilder via `setAsk(String)`, the Pengine will already be executing a query. You can get the query via `getCurrentQuery()`.
+
+If not, you'll need to start a query with `ask(String)`.
+
+Both of these return a `com.simularity.os.javapengine.Query` object.
+
+if the `hasNext()` method returns true, the query _may_ have more answers. `next()` returns the next Proof, or null if there are none.
+
+The Proof object has a key-value map that maps variables in the query to values. So 
+
+---
+    member(X, [a,b,c])
+---
+
+would result in `{ "X": "a"}` as the first proof, `{ "X": "b"}` as the second, and `{ "X": "c"}` as the last.
+
+There are convenience methods for extracting common Java types from the JSON structure.
+
+If you want to stop getting solutions before they're exhausted, Query has a `stop()` method.
+
+After you have stopped or exhausted the solutions, you can start another query. Each Pengine can be used for only one query at a time.
+
+When you are done with the Pengine, call destroy() on it. This will happen automatically if you left setDestroy set to true.
+
+
+
+
 
 

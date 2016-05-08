@@ -8,6 +8,8 @@ TODO list
  * handle multithreading
  * write the tests below
  * ask option in create
+ * Move to Simularity's new organization on github. waiting on Ray to create and add me to the organization.
+ * Deploy to Maven Central. Waiting until we move to Simularity's github organization.
  
  Next Revision
  -------------
